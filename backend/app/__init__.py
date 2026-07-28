@@ -1,0 +1,2 @@
+"""NovelHub backend application."""
+
