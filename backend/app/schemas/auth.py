@@ -7,15 +7,15 @@ _USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{3,50}$")
 
 
 def _validate_password(value: str) -> str:
-    if not all((re.search(r"[a-z]", value), re.search(r"[A-Z]", value), re.search(r"\d", value), re.search(r"[^A-Za-z0-9]", value))):
-        raise ValueError("Password must include uppercase, lowercase, number, and special character")
+    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
+        raise ValueError("Password must include at least one letter and one number")
     return value
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     username: str = Field(min_length=3, max_length=50)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
 
     @field_validator("email")
     @classmethod
@@ -55,7 +55,7 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirmRequest(BaseModel):
     token: str = Field(min_length=32, max_length=2048)
-    new_password: str = Field(min_length=12, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
 
     @field_validator("new_password")
     @classmethod
