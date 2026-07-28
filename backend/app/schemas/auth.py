@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-_USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{3,50}$")
+_USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9]{3,50}$")
 
 
 def _validate_password(value: str) -> str:
@@ -26,7 +26,7 @@ class RegisterRequest(BaseModel):
     @classmethod
     def normalize_username(cls, value: str) -> str:
         if not _USERNAME_PATTERN.fullmatch(value):
-            raise ValueError("Username must use 3-50 letters, numbers, or underscores")
+            raise ValueError("Username must use 3-50 letters or numbers only")
         return value.lower()
 
     @field_validator("password")

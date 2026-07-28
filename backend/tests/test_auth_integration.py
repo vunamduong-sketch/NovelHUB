@@ -29,10 +29,10 @@ def api():
 def test_register_login_refresh_logout_and_reset_password(api) -> None:
     client, email = api
     password = "StrongPassword1!"
-    register = client.post("/api/v1/auth/register", json={"email": email, "username": f"reader_{uuid.uuid4().hex[:12]}", "password": password})
+    register = client.post("/api/v1/auth/register", json={"email": email, "username": f"reader{uuid.uuid4().hex[:12]}", "password": password})
     assert register.status_code == 201
     assert register.json()["roles"] == ["reader"]
-    assert client.post("/api/v1/auth/register", json={"email": email, "username": "another_reader", "password": password}).status_code == 409
+    assert client.post("/api/v1/auth/register", json={"email": email, "username": "anotherreader", "password": password}).status_code == 409
 
     login = client.post("/api/v1/auth/login", json={"identity": email, "password": password})
     assert login.status_code == 200

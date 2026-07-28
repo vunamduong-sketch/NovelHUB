@@ -26,8 +26,13 @@ def test_reset_token_cannot_be_used_as_an_access_token() -> None:
 
 
 def test_password_policy_requires_ten_characters_a_letter_and_a_number() -> None:
-    request = RegisterRequest(email="reader@example.com", username="reader_01", password="novelhub10")
+    request = RegisterRequest(email="reader@example.com", username="reader01", password="novelhub10")
     assert request.password == "novelhub10"
     for password in ("short123", "abcdefghij", "1234567890"):
         with pytest.raises(ValidationError):
-            RegisterRequest(email="reader@example.com", username="reader_01", password=password)
+            RegisterRequest(email="reader@example.com", username="reader01", password=password)
+
+
+def test_username_only_accepts_letters_and_numbers() -> None:
+    with pytest.raises(ValidationError):
+        RegisterRequest(email="reader@example.com", username="reader_01", password="novelhub10")

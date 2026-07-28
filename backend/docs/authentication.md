@@ -23,7 +23,7 @@ trả `password_hash`.
 ## Validation và registration
 
 - Email và username được normalize lowercase.
-- Username: 3–50 ký tự ASCII chữ, số hoặc `_`.
+- Username: 3–50 ký tự ASCII, chỉ gồm chữ cái và chữ số.
 - Password: 10–128 ký tự; cần tối thiểu một chữ cái và một chữ số.
 - Email/username unique (case-insensitive) theo index PostgreSQL hiện có.
 - User mới được gán role mặc định `reader`, role đã được Alembic seed.
