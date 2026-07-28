@@ -7,6 +7,12 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://postgres:postgres@localhost:5432/novelhub"
     )
+    jwt_secret_key: str = "change-this-development-secret-before-deployment"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 14
+    password_reset_expire_minutes: int = 15
+    environment: str = "development"
 
     model_config = SettingsConfigDict(
         env_file=".env",

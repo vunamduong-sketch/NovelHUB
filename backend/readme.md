@@ -65,6 +65,11 @@ alembic revision --autogenerate -m "describe change"
 alembic upgrade head
 ```
 
+## Authentication
+
+API contract, quyết định bảo mật, biến môi trường và hướng dẫn test cho
+FCPMP-11 đến FCPMP-14 nằm tại [docs/authentication.md](docs/authentication.md).
+
 ## Chạy bằng Docker
 
 Từ thư mục `NovelHUB/backend`:
