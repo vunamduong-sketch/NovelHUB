@@ -1,16 +1,31 @@
-# React + Vite
+# NovelHUB Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Authentication UI
 
-Currently, two official plugins are available:
+Login, registration và password reset gọi backend `/api/v1/auth`. Khi chạy development, Vite proxy
+`/api` tới `http://localhost:8000`; hãy khởi động backend trước.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```powershell
+npm install
+npm run dev
+```
 
-## React Compiler
+Mở `http://localhost:5173`. Có thể đặt `VITE_API_BASE_URL` (ví dụ
+`http://localhost:8000`) trong `frontend/.env.local` khi không dùng proxy.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Access/refresh token được giữ trong `sessionStorage` để duy trì phiên trong tab
+hiện tại. Password reset chỉ hiển thị development token khi backend trả
+`debug_reset_token`; production cần email provider. Production nên chuyển refresh
+token sang HttpOnly Secure cookie khi backend contract được nâng cấp.
 
-## Expanding the ESLint configuration
+## Structure and testing
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Authentication is organized into `api/`, `auth/`, `components/auth/`, `pages/auth/`
+and `utils/` so later User Management tasks can reuse routes, API client and
+validation. `ProtectedRoute` is ready for Profile and Avatar pages.
+
+```powershell
+npm run test
+npm run lint
+npm run build
+```
