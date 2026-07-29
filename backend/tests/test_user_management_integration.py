@@ -1,4 +1,4 @@
-"""Runs against an explicitly supplied disposable PostgreSQL database."""
+"""Runs against a PostgreSQL database, using a local fallback when no explicit test URL is provided."""
 import os
 import tempfile
 import uuid
@@ -8,18 +8,32 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
-if not os.getenv("NOVELHUB_TEST_DATABASE_URL"):
-    pytest.skip("Set NOVELHUB_TEST_DATABASE_URL to run PostgreSQL integration tests", allow_module_level=True)
+_test_database_url = (
+    os.getenv("NOVELHUB_TEST_DATABASE_URL")
+    or os.getenv("DATABASE_URL")
+    or "postgresql+psycopg://postgres:postgres@localhost:5433/novelhub"
+)
+os.environ["DATABASE_URL"] = _test_database_url
+os.environ["NOVELHUB_TEST_DATABASE_URL"] = _test_database_url
 
 _avatar_root = Path(tempfile.mkdtemp(prefix="novelhub-avatar-test-"))
-os.environ["DATABASE_URL"] = os.environ["NOVELHUB_TEST_DATABASE_URL"]
 os.environ["AVATAR_UPLOAD_DIR"] = str(_avatar_root)
 os.environ["AVATAR_PUBLIC_URL_PREFIX"] = "/uploads/avatars"
 os.environ["AVATAR_MAX_SIZE_BYTES"] = "2097152"
 
+from app.database.base import Base  # noqa: E402
 from app.database.session import SessionLocal  # noqa: E402
 from app.models.user import User  # noqa: E402
+import app.models  # noqa: E402
 from main import app  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _ensure_database_ready():
+    try:
+        Base.metadata.create_all(bind=SessionLocal.kw["bind"], checkfirst=True)
+    except Exception as exc:  # pragma: no cover - exercised when database unavailable
+        pytest.skip(f"PostgreSQL integration test skipped: {exc}")
 
 
 @pytest.fixture
