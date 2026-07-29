@@ -1,7 +1,4 @@
-import axios from 'axios'
-
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '')
-const api = axios.create({ baseURL: configuredBaseUrl ? `${configuredBaseUrl}/api/v1` : '/api/v1' })
+import { api } from '../api/client.js'
 
 function messageFrom(error) {
   const detail = error.response?.data?.detail
@@ -9,21 +6,20 @@ function messageFrom(error) {
   return detail || 'Unable to reach NovelHUB. Please try again.'
 }
 
-export async function registerAccount(payload) {
-  try { return (await api.post('/auth/register', payload)).data } catch (error) { throw new Error(messageFrom(error), { cause: error }) }
+async function authPost(path, payload) {
+  try { return (await api.post(path, payload, { skipAuthRefresh: true })).data } catch (error) { throw new Error(messageFrom(error), { cause: error }) }
 }
 
+export function registerAccount(payload) { return authPost('/auth/register', payload) }
 export async function loginAccount(identity, password) {
-  try { return (await api.post('/auth/login', { identity, password })).data } catch (error) {
-    const message = error.response?.status === 401 ? 'Incorrect email/username or password.' : messageFrom(error)
-    throw new Error(message, { cause: error })
+  try { return await authPost('/auth/login', { identity, password }) } catch (error) {
+    if (error.cause?.response?.status === 401) throw new Error('Incorrect email/username or password.', { cause: error })
+    throw error
   }
 }
-
-export async function refreshSession(refreshToken) {
-  try { return (await api.post('/auth/refresh', { refresh_token: refreshToken })).data } catch (error) { throw new Error(messageFrom(error), { cause: error }) }
-}
-
+export function refreshSession(refreshToken) { return authPost('/auth/refresh', { refresh_token: refreshToken }) }
 export async function logoutAccount(refreshToken) {
-  try { await api.post('/auth/logout', { refresh_token: refreshToken }) } catch { /* local session must still be cleared */ }
+  try { await authPost('/auth/logout', { refresh_token: refreshToken }) } catch { /* local session must still be cleared */ }
 }
+export function requestPasswordReset(email) { return authPost('/auth/password-reset/request', { email }) }
+export function confirmPasswordReset(token, newPassword) { return authPost('/auth/password-reset/confirm', { token, new_password: newPassword }) }

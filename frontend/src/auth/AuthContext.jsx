@@ -1,20 +1,10 @@
-import { useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { loginAccount, logoutAccount, refreshSession, registerAccount } from './authApi.js'
 import { AuthContext } from './authContext.js'
-
-const STORAGE_KEY = 'novelhub.auth.session'
-
-function readSession() {
-  try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) } catch { return null }
-}
+import { clearSession, getSession, saveSession, subscribeToSession } from './sessionStore.js'
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(readSession)
-
-  function saveSession(nextSession) {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession))
-    setSession(nextSession)
-  }
+  const session = useSyncExternalStore(subscribeToSession, getSession, getSession)
 
   async function signIn(identity, password) { saveSession(await loginAccount(identity, password)) }
   async function signUp({ email, username, password }) {
@@ -29,8 +19,7 @@ export function AuthProvider({ children }) {
   }
   async function signOut() {
     if (session?.refresh_token) await logoutAccount(session.refresh_token)
-    sessionStorage.removeItem(STORAGE_KEY)
-    setSession(null)
+    clearSession()
   }
 
   return <AuthContext.Provider value={{ user: session?.user ?? null, accessToken: session?.access_token ?? null, signIn, signOut, signUp, renewSession }}>{children}</AuthContext.Provider>
