@@ -150,31 +150,20 @@ Hệ thống hiện dùng PostgreSQL. Các đối tượng/bảng database trong
 
 ### Sprint 1
 
--   Authentication
--   User
--   Role
--   Story
--   Category
--   Tag
 -   Database Design
--   Swagger
+-   Authentication
+-   User Management
+-   Novel Management
+-   Chapter Management
+-   Administration
 
 ### Sprint 2
 
--   Chapter
--   Reading
--   Bookmark
--   Rating
--   Comment
--   Dashboard
-
-### Sprint 3
-
+-   Reading Platform
+-   Community
 -   AI Assistant
--   Testing
--   Docker
--   Documentation
--   Deploy
+-   Testing Documents
+-   Slide Presentation
 
 ## 9. Công nghệ
 

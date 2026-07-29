@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 14
     password_reset_expire_minutes: int = 15
     environment: str = "development"
+    avatar_upload_dir: str = "uploads/avatars"
+    avatar_public_url_prefix: str = "/uploads/avatars"
+    avatar_max_size_bytes: int = 2 * 1024 * 1024
 
     model_config = SettingsConfigDict(
         env_file=".env",
