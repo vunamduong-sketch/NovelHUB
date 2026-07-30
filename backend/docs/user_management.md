@@ -1,4 +1,4 @@
-# NovelHub User Management API Contract
+# NovelHub User Management 
 
 Tài liệu này mô tả module User Management cho giai đoạn tiếp theo, giữ nguyên nguyên tắc không xung đột với module Authentication hiện tại.
 

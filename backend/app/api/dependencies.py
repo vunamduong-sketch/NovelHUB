@@ -28,3 +28,13 @@ def get_current_user(
     if user is None or user.status != "active" or user.deleted_at is not None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is not available")
     return user
+
+
+def require_author(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    roles = AuthRepository(db).get_role_codes(current_user.id)
+    if "author" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Author role required")
+    return current_user
