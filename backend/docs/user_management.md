@@ -164,38 +164,70 @@ Errors:
 
 ### Unit test
 
-Chạy từ thư mục backend:
+Chạy từ thư mục backend của project:
 
 ```powershell
-$project = 'd:\Lap trinh\Thực tập tốt nghiệp\MockProject\NovelHUB\backend'
-Set-Location $project
-& 'd:\Lap trinh\Thực tập tốt nghiệp\MockProject\NovelHUB\.venv\Scripts\python.exe' -m pytest tests/test_user_schema.py tests/test_security.py -q
+cd backend
+python -m pytest tests/test_user_schema.py tests/test_security.py -q
+```
+
+Nếu project đang dùng virtual environment, có thể kích hoạt môi trường trước rồi chạy:
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pytest tests/test_user_schema.py tests/test_security.py -q
 ```
 
 ### Integration test
 
-Chạy từ thư mục backend:
+Integration test cần PostgreSQL đang chạy và nên dùng database test riêng để không ghi dữ liệu vào database `novelhub` thật. Nếu dùng Docker Compose của project, PostgreSQL thường được expose ở cổng host `5433`.
+
+Chạy từ thư mục `backend` của project:
 
 ```powershell
-$project = 'd:\Lap trinh\Thực tập tốt nghiệp\MockProject\NovelHUB\backend'
-Set-Location $project
-& 'd:\Lap trinh\Thực tập tốt nghiệp\MockProject\NovelHUB\.venv\Scripts\python.exe' -m pytest tests/test_user_management_integration.py -q -rs
+cd backend
+```
+
+Tạo database test riêng nếu chưa có:
+
+```powershell
+@'
+from sqlalchemy import create_engine, text
+
+engine = create_engine('postgresql+psycopg://postgres:postgres@localhost:5433/postgres', isolation_level='AUTOCOMMIT')
+with engine.connect() as conn:
+    exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = 'novelhub_user_management_test'")).scalar()
+    if not exists:
+        conn.execute(text('CREATE DATABASE novelhub_user_management_test'))
+'@ | ..\.venv\Scripts\python.exe -
+```
+
+Chạy migration và test bằng `NOVELHUB_TEST_DATABASE_URL` để tránh fallback về `DATABASE_URL`/database `novelhub`:
+
+```powershell
+$env:NOVELHUB_TEST_DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5433/novelhub_user_management_test'
+$env:DATABASE_URL=$env:NOVELHUB_TEST_DATABASE_URL
+..\.venv\Scripts\python.exe -m alembic upgrade head
+..\.venv\Scripts\python.exe -m pytest tests\test_user_management_integration.py -q
+```
+
+Nếu muốn xóa database test sau khi chạy xong:
+
+```powershell
+@'
+from sqlalchemy import create_engine, text
+
+engine = create_engine('postgresql+psycopg://postgres:postgres@localhost:5433/postgres', isolation_level='AUTOCOMMIT')
+with engine.connect() as conn:
+    conn.execute(text('DROP DATABASE IF EXISTS novelhub_user_management_test WITH (FORCE)'))
+'@ | ..\.venv\Scripts\python.exe -
 ```
 
 Lưu ý:
 
-- Integration test yêu cầu cơ sở dữ liệu PostgreSQL đang chạy và có thể truy cập.
-- Nếu database chưa sẵn sàng, test có thể bị bỏ qua hoặc thất bại ở bước kết nối.
-- Đối với môi trường phát triển, có thể dùng Docker Compose để khởi động database trước khi chạy integration test.
+- Luôn đặt `NOVELHUB_TEST_DATABASE_URL` khi chạy integration test để không dùng nhầm database dev.
+- Database test phải tồn tại trước khi chạy `alembic upgrade head`.
+- Migration cần chạy trước test vì luồng đăng ký user cần role mặc định `reader` được seed.
+- Mặc định test không tự xóa database `novelhub_user_management_test`; chỉ xóa dữ liệu/file tạm do test tạo.
+- Nếu database chưa sẵn sàng hoặc biến môi trường chưa đúng, test có thể bị skip hoặc lỗi kết nối.
 
-## Câu hỏi mở và quyết định cần chốt trước khi code
-
-1. Có cho phép người dùng tự đổi `username` không? Nếu có, cần xác nhận quy tắc uniqueness và case-insensitive.
-2. Sau khi đổi mật khẩu có bước đăng xuất toàn bộ phiên ngay lập tức không (thêm blocklist access token), hay giữ như hiện tại?
-3. Có cho sửa `email` trong module này không? (Khuyến nghị: không trong giai đoạn đầu để tránh liên quan verify email.)
-
-## Definition of Done cho bước contract
-
-- Đã thống nhất 4 endpoint trên với status code, request/response, validation và security behavior.
-- Đã thống nhất avatar strategy (multipart upload) và quy tắc xóa avatar cũ.
-- Đã thống nhất username update policy.

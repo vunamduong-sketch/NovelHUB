@@ -151,6 +151,11 @@ export function ProfilePage() {
     e.preventDefault()
     clearMessages()
 
+    if (currentPassword === newPassword) {
+      setErrorMessage('Mật khẩu mới không được trùng với mật khẩu hiện tại.')
+      return
+    }
+
     if (newPassword !== confirmPassword) {
       setErrorMessage('Mật khẩu xác nhận không trùng khớp với mật khẩu mới.')
       return

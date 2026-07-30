@@ -8,11 +8,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
-_test_database_url = (
-    os.getenv("NOVELHUB_TEST_DATABASE_URL")
-    or os.getenv("DATABASE_URL")
-    or "postgresql+psycopg://postgres:postgres@localhost:5433/novelhub"
-)
+_test_database_url = os.getenv("NOVELHUB_TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+if not _test_database_url:
+    pytest.skip(
+        "Set NOVELHUB_TEST_DATABASE_URL or DATABASE_URL to run PostgreSQL integration tests",
+        allow_module_level=True,
+    )
 os.environ["DATABASE_URL"] = _test_database_url
 os.environ["NOVELHUB_TEST_DATABASE_URL"] = _test_database_url
 

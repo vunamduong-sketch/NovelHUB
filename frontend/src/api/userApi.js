@@ -1,9 +1,34 @@
 import { api } from './client.js'
 
+function translateErrorMessage(msg) {
+  if (!msg || typeof msg !== 'string') return null
+  const trimmed = msg.trim()
+  if (trimmed.includes('Current password is incorrect')) {
+    return 'Mật khẩu hiện tại không chính xác.'
+  }
+  if (trimmed.includes('User is not available')) {
+    return 'Tài khoản không tồn tại hoặc đã bị khóa.'
+  }
+  if (trimmed.includes('same as current') || trimmed.includes('same as the current')) {
+    return 'Mật khẩu mới không được trùng với mật khẩu hiện tại.'
+  }
+  return null
+}
+
 function messageFrom(error) {
   const detail = error.response?.data?.detail
-  if (Array.isArray(detail)) return detail[0]?.msg ?? 'Vui lòng kiểm tra lại các trường thông tin.'
-  return detail || 'Không thể kết nối đến máy chủ NovelHUB. Vui lòng thử lại sau.'
+  if (Array.isArray(detail)) {
+    const firstMsg = detail[0]?.msg
+    const translated = translateErrorMessage(firstMsg)
+    if (translated) return translated
+    return firstMsg ?? 'Vui lòng kiểm tra lại các trường thông tin.'
+  }
+  if (typeof detail === 'string') {
+    const translated = translateErrorMessage(detail)
+    if (translated) return translated
+    return detail
+  }
+  return 'Không thể kết nối đến máy chủ NovelHUB. Vui lòng thử lại sau.'
 }
 
 export async function fetchMyProfile() {
