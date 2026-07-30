@@ -24,7 +24,7 @@ class NovelCreateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=10000)
     category_id: int | None = Field(default=None, gt=0)
     tag_ids: list[int] = Field(default_factory=list, max_length=20)
-    cover_url: str | None = Field(default=None, max_length=2048)
+    cover_url: str | None = Field(default=None, max_length=65535)
     language_code: str = Field(default="vi", min_length=2, max_length=10)
 
     @field_validator("title")
@@ -58,7 +58,7 @@ class NovelUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=10000)
     category_id: int | None = Field(default=None, gt=0)
     tag_ids: list[int] | None = Field(default=None, max_length=20)
-    cover_url: str | None = Field(default=None, max_length=2048)
+    cover_url: str | None = Field(default=None, max_length=65535)
     status: NovelStatus | None = None
 
     @field_validator("title")
@@ -90,6 +90,13 @@ class NovelUpdateRequest(BaseModel):
         return self
 
 
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+    description: str | None = None
+
+
 class TagResponse(BaseModel):
     id: int
     name: str
@@ -101,6 +108,7 @@ class NovelResponse(BaseModel):
 
     id: str
     author_id: str
+    author_name: str | None = None
     category_id: int | None
     tags: list[TagResponse]
     title: str

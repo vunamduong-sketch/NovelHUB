@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 
+from app.models.category import Category
 from app.models.novel import Novel
 from app.models.tag import Tag
 from app.models.user import User
@@ -45,7 +46,7 @@ class NovelService:
         tag_ids: list[int],
         cover_url: str | None,
         language_code: str,
-    ) -> tuple[Novel, list[Tag]]:
+    ) -> tuple[Novel, list[Tag], str | None]:
         if category_id is not None:
             self._ensure_active_category(category_id)
         tags = self._get_existing_tags(tag_ids)
@@ -67,7 +68,8 @@ class NovelService:
         self.repository.replace_novel_tags(novel.id, [tag.id for tag in tags])
         self._save_or_raise_conflict("Failed to create novel")
         self.repository.refresh(novel)
-        return novel, tags
+        author_name = current_user.display_name or current_user.username
+        return novel, tags, author_name
 
     def update_novel(
         self,
@@ -81,7 +83,7 @@ class NovelService:
         tag_ids: list[int] | None,
         cover_url: str | None,
         status: str | None,
-    ) -> tuple[Novel, list[Tag]]:
+    ) -> tuple[Novel, list[Tag], str | None]:
         novel = self._get_author_novel(current_user, novel_id)
         tags: list[Tag] | None = None
 
@@ -113,14 +115,15 @@ class NovelService:
 
         self._save_or_raise_conflict("Failed to update novel")
         self.repository.refresh(novel)
-        return novel, tags if tags is not None else self.repository.get_tags_for_novel(novel.id)
+        author_name = current_user.display_name or current_user.username
+        return novel, tags if tags is not None else self.repository.get_tags_for_novel(novel.id), author_name
 
     def delete_novel(self, current_user: User, novel_id: uuid.UUID) -> None:
         novel = self._get_author_novel(current_user, novel_id)
         novel.deleted_at = datetime.now(timezone.utc)
         self.repository.save()
 
-    def publish_novel(self, current_user: User, novel_id: uuid.UUID) -> tuple[Novel, list[Tag]]:
+    def publish_novel(self, current_user: User, novel_id: uuid.UUID) -> tuple[Novel, list[Tag], str | None]:
         novel = self._get_author_novel(current_user, novel_id)
         if not novel.title.strip():
             raise NovelPublishError("Novel title is required before publishing")
@@ -134,13 +137,56 @@ class NovelService:
 
         self.repository.save()
         self.repository.refresh(novel)
-        return novel, self.repository.get_tags_for_novel(novel.id)
+        author_name = current_user.display_name or current_user.username
+        return novel, self.repository.get_tags_for_novel(novel.id), author_name
 
-    def get_public_novel(self, novel_id: uuid.UUID) -> tuple[Novel, list[Tag]]:
-        novel = self.repository.get_public_novel(novel_id)
-        if novel is None:
+    def get_public_novels(
+        self,
+        *,
+        search: str | None = None,
+        category_id: int | None = None,
+        status: str | None = None,
+    ) -> list[tuple[Novel, list[Tag], str | None]]:
+        items = self.repository.get_public_novels(
+            search=search,
+            category_id=category_id,
+            status=status,
+        )
+        return [
+            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
+            for novel, author_name in items
+        ]
+
+    def get_public_novel(self, novel_id: uuid.UUID) -> tuple[Novel, list[Tag], str | None]:
+        res = self.repository.get_public_novel(novel_id)
+        if res is None:
             raise NovelNotFoundError("Novel is not available")
-        return novel, self.repository.get_tags_for_novel(novel.id)
+        novel, author_name = res
+        return novel, self.repository.get_tags_for_novel(novel.id), author_name
+
+    def get_author_novels(
+        self,
+        current_user: User,
+        *,
+        visibility: str | None = None,
+        status: str | None = None,
+    ) -> list[tuple[Novel, list[Tag], str | None]]:
+        items = self.repository.get_author_novels(
+            current_user.id,
+            visibility=visibility,
+            status=status,
+        )
+        return [
+            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
+            for novel, author_name in items
+        ]
+
+    def get_categories(self) -> list[Category]:
+        return self.repository.get_active_categories()
+
+    def get_tags(self) -> list[Tag]:
+        return self.repository.get_all_tags()
+
 
     def _get_author_novel(self, current_user: User, novel_id: uuid.UUID) -> Novel:
         novel = self.repository.get_author_novel(novel_id, current_user.id)

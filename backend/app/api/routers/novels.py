@@ -10,7 +10,7 @@ from app.models.tag import Tag
 from app.models.user import User
 from app.repositories.novel_repository import NovelRepository
 from app.schemas.auth import MessageResponse
-from app.schemas.novel import NovelCreateRequest, NovelResponse, NovelUpdateRequest, TagResponse
+from app.schemas.novel import CategoryResponse, NovelCreateRequest, NovelResponse, NovelUpdateRequest, TagResponse
 from app.services.novel_service import (
     CategoryNotFoundError,
     NovelConflictError,
@@ -31,10 +31,15 @@ def _tag_response(tag: Tag) -> TagResponse:
     return TagResponse(id=tag.id, name=tag.name, slug=tag.slug)
 
 
-def _novel_response(novel: Novel, tags: list[Tag]) -> NovelResponse:
+def _novel_response(novel: Novel, tags: list[Tag], author_name: str | None = None) -> NovelResponse:
+    resolved_author_name = author_name or getattr(novel, "author_name", None)
+    if not resolved_author_name and hasattr(novel, "author") and novel.author:
+        resolved_author_name = novel.author.display_name or novel.author.username
+
     return NovelResponse(
         id=str(novel.id),
         author_id=str(novel.author_id),
+        author_name=resolved_author_name,
         category_id=novel.category_id,
         tags=[_tag_response(tag) for tag in tags],
         title=novel.title,
@@ -60,7 +65,7 @@ def create_novel(
     service: NovelService = Depends(get_novel_service),
 ) -> NovelResponse:
     try:
-        novel, tags = service.create_novel(
+        novel, tags, author_name = service.create_novel(
             current_user,
             title=payload.title,
             description=payload.description,
@@ -73,7 +78,7 @@ def create_novel(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except NovelConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    return _novel_response(novel, tags)
+    return _novel_response(novel, tags, author_name=author_name)
 
 
 @router.patch("/{novel_id}", response_model=NovelResponse)
@@ -84,7 +89,7 @@ def update_novel(
     service: NovelService = Depends(get_novel_service),
 ) -> NovelResponse:
     try:
-        novel, tags = service.update_novel(
+        novel, tags, author_name = service.update_novel(
             current_user,
             novel_id,
             fields=payload.model_fields_set,
@@ -99,7 +104,7 @@ def update_novel(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except NovelConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    return _novel_response(novel, tags)
+    return _novel_response(novel, tags, author_name=author_name)
 
 
 @router.delete("/{novel_id}", response_model=MessageResponse)
@@ -122,12 +127,50 @@ def publish_novel(
     service: NovelService = Depends(get_novel_service),
 ) -> NovelResponse:
     try:
-        novel, tags = service.publish_novel(current_user, novel_id)
+        novel, tags, author_name = service.publish_novel(current_user, novel_id)
     except NovelNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except NovelPublishError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return _novel_response(novel, tags)
+    return _novel_response(novel, tags, author_name=author_name)
+
+
+@router.get("/", response_model=list[NovelResponse])
+def get_public_novels(
+    search: str | None = None,
+    category_id: int | None = None,
+    status_filter: str | None = None,
+    service: NovelService = Depends(get_novel_service),
+) -> list[NovelResponse]:
+    items = service.get_public_novels(search=search, category_id=category_id, status=status_filter)
+    return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
+
+
+@router.get("/me", response_model=list[NovelResponse])
+def get_my_novels(
+    visibility: str | None = None,
+    status_filter: str | None = None,
+    current_user: User = Depends(require_author),
+    service: NovelService = Depends(get_novel_service),
+) -> list[NovelResponse]:
+    items = service.get_author_novels(current_user, visibility=visibility, status=status_filter)
+    return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
+
+
+@router.get("/categories", response_model=list[CategoryResponse])
+def get_categories(
+    service: NovelService = Depends(get_novel_service),
+) -> list[CategoryResponse]:
+    categories = service.get_categories()
+    return [CategoryResponse(id=c.id, name=c.name, slug=c.slug, description=c.description) for c in categories]
+
+
+@router.get("/tags", response_model=list[TagResponse])
+def get_tags(
+    service: NovelService = Depends(get_novel_service),
+) -> list[TagResponse]:
+    tags = service.get_tags()
+    return [_tag_response(t) for t in tags]
 
 
 @router.get("/{novel_id}", response_model=NovelResponse)
@@ -136,7 +179,7 @@ def get_novel_detail(
     service: NovelService = Depends(get_novel_service),
 ) -> NovelResponse:
     try:
-        novel, tags = service.get_public_novel(novel_id)
+        novel, tags, author_name = service.get_public_novel(novel_id)
     except NovelNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return _novel_response(novel, tags)
+    return _novel_response(novel, tags, author_name=author_name)

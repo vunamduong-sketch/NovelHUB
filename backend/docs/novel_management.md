@@ -14,7 +14,10 @@ Author có thể:
 
 Reader hoặc người dùng public có thể:
 
+- Xem danh sách novel đã được xuất bản công khai.
 - Xem chi tiết novel đã được xuất bản công khai.
+- Lấy danh sách category đang active để chọn/lọc.
+- Lấy danh sách tag có sẵn để chọn/lọc.
 
 ## Nguyên tắc không xung đột với module hiện có
 
@@ -23,9 +26,10 @@ Reader hoặc người dùng public có thể:
 - Không sửa business logic trong `AuthService` hoặc `UserService`.
 - Novel Management dùng router, service, repository và schema riêng.
 - Endpoint của author dùng chung `get_current_user`, sau đó kiểm tra role `author` bằng `require_author`.
-- Endpoint xem chi tiết chỉ trả novel public, approved và chưa bị xóa mềm.
+- Endpoint reader/public chỉ trả novel public và chưa bị xóa mềm.
 - Category và tag là dữ liệu hệ thống/admin quản lý. Vì module admin chưa phát triển, dữ liệu này cần được tạo sẵn trong database.
 - Author có thể bỏ qua category/tag, hoặc chọn từ category/tag đang tồn tại.
+- Author có thể xem danh sách novel của chính mình, bao gồm draft/private/public miễn là chưa bị soft delete.
 
 ## Các file chính
 
@@ -55,6 +59,10 @@ Prefix: `/api/v1/novels`
 | `PATCH /{novel_id}` | author | Novel update body | `200` updated novel | `401`, `403`, `404`, `409`, `422` |
 | `DELETE /{novel_id}` | author | Bearer access token | `200` message | `401`, `403`, `404` |
 | `POST /{novel_id}/publish` | author | Bearer access token | `200` published novel | `400`, `401`, `403`, `404` |
+| `GET /` | reader/public | Query `search`, `category_id`, `status_filter` | `200` public novel list | `422` |
+| `GET /me` | author | Query `visibility`, `status_filter` | `200` author novel list | `401`, `403`, `422` |
+| `GET /categories` | reader/public | None | `200` active category list | - |
+| `GET /tags` | reader/public | None | `200` tag list | - |
 | `GET /{novel_id}` | reader/public | None | `200` public novel detail | `404` |
 
 Validation errors của FastAPI trả `422` với mảng `detail`. Business errors trả `{ "detail": "..." }`. Message-only response dùng `{ "message": "..." }`.
@@ -104,6 +112,7 @@ Success `201`:
 {
   "id": "uuid",
   "author_id": "uuid",
+  "author_name": "Author Name",
   "category_id": 1,
   "tags": [
     {
@@ -248,7 +257,154 @@ Errors:
 - `403`: user không có role `author`.
 - `404`: novel không tồn tại, không thuộc author, hoặc đã bị xóa.
 
-## 5. GET `/api/v1/novels/{novel_id}`
+## 5. GET `/api/v1/novels/`
+
+Reader hoặc public user xem danh sách novel đã xuất bản công khai.
+
+Authentication:
+
+- Không bắt buộc đăng nhập.
+
+Query params:
+
+| Param | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `search` | string | no | Tìm theo `title` hoặc `description` bằng match gần đúng |
+| `category_id` | integer | no | Lọc theo category |
+| `status_filter` | string | no | Lọc theo status: `draft`, `ongoing`, `hiatus`, `completed` |
+
+Rules:
+
+- Chỉ trả novel có:
+  - `deleted_at IS NULL`
+  - `visibility = "public"`
+- Kết quả được sort theo `published_at DESC NULLS LAST`, sau đó `updated_at DESC`.
+- Mỗi item trả cùng format `NovelResponse`, gồm `author_name` và `tags`.
+- Nếu không có novel phù hợp thì trả mảng rỗng `[]`.
+
+Success `200`:
+
+```json
+[
+  {
+    "id": "uuid",
+    "author_id": "uuid",
+    "author_name": "Author Name",
+    "category_id": 1,
+    "tags": [
+      {
+        "id": 1,
+        "name": "Fantasy",
+        "slug": "fantasy"
+      }
+    ],
+    "title": "Tên truyện",
+    "slug": "ten-truyen",
+    "description": "Mô tả ngắn về truyện",
+    "cover_url": null,
+    "language_code": "vi",
+    "status": "ongoing",
+    "visibility": "public",
+    "moderation_status": "approved",
+    "published_at": "2026-07-31T10:00:00Z",
+    "view_count": 0,
+    "follower_count": 0,
+    "rating_count": 0,
+    "rating_average": "0.00"
+  }
+]
+```
+
+Errors:
+
+- `422`: query param không đúng kiểu, ví dụ `category_id` không phải integer.
+
+## 6. GET `/api/v1/novels/me`
+
+Author xem danh sách novel của chính mình.
+
+Authentication:
+
+- Bắt buộc Bearer access token hợp lệ.
+- User phải có role `author`.
+
+Query params:
+
+| Param | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `visibility` | string | no | Lọc theo `public` hoặc `private` |
+| `status_filter` | string | no | Lọc theo `draft`, `ongoing`, `hiatus`, `completed` |
+
+Rules:
+
+- Chỉ trả novel thuộc author đang đăng nhập.
+- Không trả novel đã bị soft delete.
+- Có thể trả draft/private/public vì đây là endpoint quản lý của author.
+- Kết quả sort theo `updated_at DESC`.
+- Mỗi item trả cùng format `NovelResponse`, gồm `author_name` và `tags`.
+
+Success `200`: trả về list novel của author. Nếu author chưa có novel phù hợp thì trả `[]`.
+
+Errors:
+
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: user không có role `author`.
+- `422`: query param không hợp lệ.
+
+## 7. GET `/api/v1/novels/categories`
+
+Lấy danh sách category đang active để frontend/Swagger chọn khi tạo hoặc lọc novel.
+
+Authentication:
+
+- Không bắt buộc đăng nhập.
+
+Rules:
+
+- Chỉ trả category có `is_active = true`.
+- Category/tag là dữ liệu do admin quản lý; endpoint này chỉ đọc dữ liệu có sẵn.
+- Kết quả sort theo `name`.
+
+Success `200`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Fantasy",
+    "slug": "fantasy",
+    "description": "Truyện kỳ ảo, phép thuật và thế giới tưởng tượng."
+  }
+]
+```
+
+## 8. GET `/api/v1/novels/tags`
+
+Lấy danh sách tag có sẵn để frontend/Swagger chọn khi tạo hoặc lọc novel.
+
+Authentication:
+
+- Không bắt buộc đăng nhập.
+
+Rules:
+
+- Trả tất cả tag đang có trong bảng `tags`.
+- Endpoint này không tạo/sửa/xóa tag.
+- Kết quả sort theo `name`.
+
+Success `200`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Fantasy",
+    "slug": "fantasy"
+  }
+]
+```
+
+## 9. GET `/api/v1/novels/{novel_id}`
 
 Reader hoặc public user xem chi tiết novel đã xuất bản công khai.
 
@@ -262,7 +418,6 @@ Rules:
 - Chỉ trả novel có:
   - `deleted_at IS NULL`
   - `visibility = "public"`
-  - `moderation_status = "approved"`
 - Novel private, draft hoặc deleted trả `404` để không lộ thông tin.
 
 Success `200`: trả về novel detail, cùng format với create response.
@@ -306,7 +461,7 @@ PowerShell:
 
 ```powershell
 cd backend
-
+..\.venv\Scripts\Activate.ps1
 $env:POSTGRES_ADMIN_URL = "postgresql+psycopg://postgres:postgres@localhost:5433/postgres"
 $env:NOVELHUB_TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5433/novelhub_novel_management_test"
 $env:DATABASE_URL = $env:NOVELHUB_TEST_DATABASE_URL
@@ -316,7 +471,7 @@ Bash:
 
 ```bash
 cd backend
-
+..\.venv\Scripts\Activate.ps1
 export POSTGRES_ADMIN_URL="postgresql+psycopg://postgres:postgres@localhost:5433/postgres"
 export NOVELHUB_TEST_DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5433/novelhub_novel_management_test"
 export DATABASE_URL="$NOVELHUB_TEST_DATABASE_URL"

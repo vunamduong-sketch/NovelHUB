@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
+import { fetchPublicNovels } from '../api/novelApi.js'
 
 // Helper function to resolve avatar URL from DB or uploaded static path
 function getAvatarUrl(avatarPath) {
@@ -108,10 +109,14 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
   const location = useLocation()
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [authorAlertModal, setAuthorAlertModal] = useState(false)
   const { user, signOut, refreshProfile } = useAuth()
   const dropdownRef = useRef(null)
+  const searchContainerRef = useRef(null)
 
   // Support both external state management and internal standalone state for Header
   const isMenuOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
@@ -124,10 +129,46 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
     }
   }
 
+  // Live search query effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      setShowSearchDropdown(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true)
+      setShowSearchDropdown(true)
+      try {
+        const data = await fetchPublicNovels({ search: searchQuery.trim() })
+        setSearchResults(data || [])
+      } catch (err) {
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowSearchDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery)
+      setShowSearchDropdown(false)
+      navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
 
@@ -165,8 +206,7 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
     if (!isAuthor) {
       setAuthorAlertModal(true)
     } else {
-      // Proceed to author studio / dashboard in future task
-      console.log('Navigating to author studio...')
+      navigate('/author/compositions')
     }
   }
 
@@ -228,8 +268,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
           {/* 3. Sáng tác của tôi (nếu đã đăng nhập) */}
           {user && (
             <a 
-              href="#my-creations" 
-              className="drawer-nav-item" 
+              href="/author/compositions" 
+              className={`drawer-nav-item ${location.pathname === '/author/compositions' ? 'active' : ''}`} 
               onClick={handleMyCreationsClick}
             >
               <CreationIcon /> <span>Sáng tác của tôi</span>
@@ -323,7 +363,7 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
           </div>
 
           {/* Chính giữa: Thanh tìm kiếm truyện */}
-          <div className="header-center">
+          <div className="header-center" ref={searchContainerRef}>
             <form className="search-bar-form" onSubmit={handleSearch}>
               <div className="search-input-wrapper">
                 <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -336,14 +376,73 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                   placeholder="Tìm kiếm tên truyện, tác giả..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => { if (searchQuery.trim()) setShowSearchDropdown(true); }}
                 />
                 {searchQuery && (
-                  <button type="button" className="clear-search-btn" onClick={() => setSearchQuery('')}>
+                  <button type="button" className="clear-search-btn" onClick={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
                     ✕
                   </button>
                 )}
               </div>
             </form>
+
+            {/* Live Search Suggestions Dropdown Card */}
+            {showSearchDropdown && searchQuery.trim() && (
+              <div className="header-search-suggestions-card">
+                <div className="suggestions-header">
+                  <span>Gợi ý tìm kiếm</span>
+                  {isSearching ? (
+                    <span className="searching-spinner-text">Đang tìm...</span>
+                  ) : (
+                    <span className="results-count-tag">{searchResults.length} kết quả</span>
+                  )}
+                </div>
+
+                <div className="suggestions-list">
+                  {isSearching ? (
+                    <div className="suggestion-loading-item">
+                      <div className="spinner-ring-small" />
+                      <span>Đang kết nối tìm kiếm...</span>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="suggestion-empty-item">
+                      <p>Không tìm thấy tác phẩm phù hợp với <strong>"{searchQuery}"</strong></p>
+                    </div>
+                  ) : (
+                    searchResults.map((novel) => (
+                      <div
+                        key={novel.id}
+                        className="suggestion-novel-item"
+                        onClick={() => {
+                          setShowSearchDropdown(false)
+                          navigate(`/novels/${novel.id}`)
+                        }}
+                      >
+                        <div className="suggestion-cover-box">
+                          {novel.cover_url ? (
+                            <img src={novel.cover_url} alt={novel.title} />
+                          ) : (
+                            <div className="suggestion-cover-placeholder">
+                              {novel.title?.[0] || 'N'}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="suggestion-novel-info">
+                          <h4 className="suggestion-title">{novel.title}</h4>
+                          <div className="suggestion-meta">
+                            <span className="suggestion-badge">{novel.status === 'completed' ? 'Đã hoàn thành' : 'Đang tiến hành'}</span>
+                            {novel.view_count !== undefined && (
+                              <span className="suggestion-views">👁️ {novel.view_count.toLocaleString('vi-VN')}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bên phải ngoài cùng: Avatar (bên TRÁI nút menu 3 gạch), rồi đến Nút menu 3 gạch */}
