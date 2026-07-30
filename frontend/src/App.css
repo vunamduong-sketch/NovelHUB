@@ -836,9 +836,43 @@
   line-height: 1.6;
 }
 
+.author-alert-content {
+  padding: 8px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.author-alert-content h3 {
+  margin: 0;
+}
+
+.author-alert-content p {
+  margin: 0;
+}
+
+.author-alert-content .modal-confirm-btn {
+  margin-top: 8px;
+}
+
 .modal-confirm-btn {
   width: 100%;
   min-height: 46px;
+}
+
+@media (max-width: 640px) {
+  .author-modal-backdrop {
+    padding: 16px;
+  }
+
+  .author-modal-header {
+    padding: 24px 24px 16px;
+  }
+
+  .author-alert-content {
+    padding: 8px 24px 24px;
+  }
 }
 
 /* Home Body (Currently empty) */

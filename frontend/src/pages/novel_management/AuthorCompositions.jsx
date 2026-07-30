@@ -535,6 +535,14 @@ export function AuthorCompositions() {
   const [actionLoading, setActionLoading] = useState(false)
   const [modalError, setModalError] = useState('')
 
+  const handleTitleInvalid = (message) => (event) => {
+    event.target.setCustomValidity(message)
+  }
+
+  const clearTitleValidity = (event) => {
+    event.target.setCustomValidity('')
+  }
+
   // Show Toast
   const showToast = (type, text) => {
     setToast({ type, text })
@@ -1064,6 +1072,8 @@ export function AuthorCompositions() {
                     placeholder="Nhập tên tiểu thuyết..."
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
+                    onInvalid={handleTitleInvalid('Vui lòng nhập tiêu đề truyện.')}
+                    onInput={clearTitleValidity}
                     maxLength={250}
                     required
                   />
@@ -1153,6 +1163,8 @@ export function AuthorCompositions() {
                     type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
+                    onInvalid={handleTitleInvalid('Vui lòng nhập tiêu đề truyện.')}
+                    onInput={clearTitleValidity}
                     maxLength={250}
                     placeholder="Nhập tên tiểu thuyết..."
                     required

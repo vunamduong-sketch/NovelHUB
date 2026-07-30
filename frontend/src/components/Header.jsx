@@ -339,15 +339,17 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                 ✕
               </button>
             </div>
-            <h3>Tính năng dành cho Tác giả</h3>
-            <p>Tính năng này dành cho tác giả. Vui lòng đăng ký quyền tác giả để bắt đầu đăng sáng tác của bạn trên NovelHUB.</p>
-            <button 
-              type="button" 
-              className="primary-button modal-confirm-btn"
-              onClick={() => setAuthorAlertModal(false)}
-            >
-              Đã hiểu
-            </button>
+            <div className="author-alert-content">
+              <h3>Tính năng dành cho Tác giả</h3>
+              <p>Tính năng này dành cho tác giả. Vui lòng đăng ký quyền tác giả để bắt đầu đăng sáng tác của bạn trên NovelHUB.</p>
+              <button 
+                type="button" 
+                className="primary-button modal-confirm-btn"
+                onClick={() => setAuthorAlertModal(false)}
+              >
+                Đã hiểu
+              </button>
+            </div>
           </div>
         </div>
       )}
