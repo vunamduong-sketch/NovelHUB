@@ -23,3 +23,12 @@ export async function logoutAccount(refreshToken) {
 }
 export function requestPasswordReset(email) { return authPost('/auth/password-reset/request', { email }) }
 export function confirmPasswordReset(token, newPassword) { return authPost('/auth/password-reset/confirm', { token, new_password: newPassword }) }
+
+export async function fetchUserProfile() {
+  try {
+    const response = await api.get('/users/me')
+    return response.data
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
+  }
+}
