@@ -118,24 +118,24 @@ export function HomePage() {
   const searchQuery = searchParams.get('search') || ''
 
   useEffect(() => {
-    loadHomePageData()
-  }, [searchQuery])
-
-  const loadHomePageData = async () => {
-    setLoading(true)
-    try {
-      const [novelsData, catsData] = await Promise.all([
-        fetchPublicNovels(searchQuery ? { search: searchQuery } : {}),
-        fetchCategories(),
-      ])
-      setPublishedNovels(novelsData || [])
-      setCategories(catsData || [])
-    } catch (err) {
-      setPublishedNovels([])
-    } finally {
-      setLoading(false)
+    const init = async () => {
+      await Promise.resolve()
+      setLoading(true)
+      try {
+        const [novelsData, catsData] = await Promise.all([
+          fetchPublicNovels(searchQuery ? { search: searchQuery } : {}),
+          fetchCategories(),
+        ])
+        setPublishedNovels(novelsData || [])
+        setCategories(catsData || [])
+      } catch {
+        setPublishedNovels([])
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+    init()
+  }, [searchQuery])
 
   const handleCreateNovelRedirect = () => {
     if (!user) {

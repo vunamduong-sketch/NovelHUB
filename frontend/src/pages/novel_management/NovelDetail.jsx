@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Header } from '../components/Header.jsx'
-import { Footer } from '../components/Footer.jsx'
-import { getNovelDetail, fetchCategories } from '../api/novelApi.js'
+import { Header } from '../../components/Header.jsx'
+import { Footer } from '../../components/Footer.jsx'
+import { getNovelDetail, fetchCategories } from '../../api/novelApi.js'
 
 // 2D Vector Monochrome Icons
 function BookOpenIcon() {
@@ -95,29 +95,28 @@ export function NovelDetail() {
   // Interactive UI states
   const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'chapters'
   const [isFollowing, setIsFollowing] = useState(false)
-  const [isNominated, setIsNominated] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
-    loadNovelInfo()
-  }, [id])
-
-  const loadNovelInfo = async () => {
-    setLoading(true)
-    setErrorMsg('')
-    try {
-      const [novelData, catsData] = await Promise.all([
-        getNovelDetail(id),
-        fetchCategories(),
-      ])
-      setNovel(novelData)
-      setCategories(catsData || [])
-    } catch (err) {
-      setErrorMsg(err.message || 'Không thể tải thông tin tác phẩm này.')
-    } finally {
-      setLoading(false)
+    const init = async () => {
+      await Promise.resolve()
+      setLoading(true)
+      setErrorMsg('')
+      try {
+        const [novelData, catsData] = await Promise.all([
+          getNovelDetail(id),
+          fetchCategories(),
+        ])
+        setNovel(novelData)
+        setCategories(catsData || [])
+      } catch (err) {
+        setErrorMsg(err.message || 'Không thể tải thông tin tác phẩm này.')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+    init()
+  }, [id])
 
   const showToast = (msg) => {
     setToastMessage(msg)
@@ -127,11 +126,6 @@ export function NovelDetail() {
   const handleToggleFollow = () => {
     setIsFollowing((prev) => !prev)
     showToast(isFollowing ? 'Đã hủy theo dõi tác phẩm' : 'Đã thêm tác phẩm vào tủ sách theo dõi!')
-  }
-
-  const handleNominate = () => {
-    setIsNominated((prev) => !prev)
-    showToast(isNominated ? 'Đã hủy đề cử' : 'Đã gửi 1 phiếu đề cử cho tác phẩm!')
   }
 
   const handleShare = () => {
@@ -311,11 +305,11 @@ export function NovelDetail() {
 
                 <button 
                   type="button" 
-                  className="secondary-button detail-action-btn"
-                  onClick={() => showToast('Tính năng Theo dõi truyện tạm thời chưa khả dụng.')}
+                  className={`secondary-button detail-action-btn ${isFollowing ? 'active' : ''}`}
+                  onClick={handleToggleFollow}
                 >
                   <FollowerIcon />
-                  <span>Theo Dõi</span>
+                  <span>{isFollowing ? 'Đã Theo Dõi' : 'Theo Dõi'}</span>
                 </button>
 
                 <button 

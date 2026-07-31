@@ -11,27 +11,7 @@ import {
   fetchTags,
 } from '../../api/novelApi.js'
 
-// --- Default Categories & Tags Fallbacks ---
-const DEFAULT_CATEGORIES = [
-  { id: 1, name: 'Huyền Huyễn' },
-  { id: 2, name: 'Tiên Hiệp' },
-  { id: 3, name: 'Đô Thị' },
-  { id: 4, name: 'Ngôn Tình' },
-  { id: 5, name: 'Trọng Sinh' },
-  { id: 6, name: 'Xuyên Không' },
-  { id: 7, name: 'Kỳ Ảo' },
-  { id: 8, name: 'Trinh Thám' },
-]
 
-const DEFAULT_TAGS = [
-  { id: 1, name: 'Hệ thống' },
-  { id: 2, name: 'Hài hước' },
-  { id: 3, name: 'Sảng văn' },
-  { id: 4, name: 'Nam sinh' },
-  { id: 5, name: 'Nữ sinh' },
-  { id: 6, name: 'Bá đạo' },
-  { id: 7, name: 'Thần thoại' },
-]
 
 // --- 2D Monochromatic SVG Icons ---
 function PlusIcon() {
@@ -209,6 +189,14 @@ const STATUS_OPTIONS = [
   { value: 'hiatus', label: 'Tạm ngưng', badgeClass: 'status-hiatus' },
 ]
 
+const FILTER_STATUS_OPTIONS = [
+  { value: 'all', label: 'Tất cả trạng thái', badgeClass: 'status-all' },
+  { value: 'draft', label: 'Bản nháp', badgeClass: 'status-draft' },
+  { value: 'ongoing', label: 'Đang tiến hành', badgeClass: 'status-ongoing' },
+  { value: 'completed', label: 'Đã hoàn thành', badgeClass: 'status-completed' },
+  { value: 'hiatus', label: 'Tạm ngưng', badgeClass: 'status-hiatus' },
+]
+
 // --- Custom Status Select Component ---
 function CustomStatusSelect({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -242,6 +230,63 @@ function CustomStatusSelect({ value, onChange }) {
       {isOpen && (
         <div className="custom-status-dropdown-menu">
           {STATUS_OPTIONS.map((option) => (
+            <div
+              key={option.value}
+              className={`custom-status-option-item ${option.value === value ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(option.value)
+                setIsOpen(false)
+              }}
+            >
+              <span className={`composition-status-badge ${option.badgeClass}`}>
+                {option.label}
+              </span>
+              {option.value === value && (
+                <div className="option-check">
+                  <CheckIcon />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Custom Filter Status Select Component ---
+function FilterStatusSelect({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef(null)
+
+  const selectedOption = FILTER_STATUS_OPTIONS.find((opt) => opt.value === value) || FILTER_STATUS_OPTIONS[0]
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="custom-status-select-container filter-status-select-container" ref={containerRef}>
+      <button
+        type="button"
+        className={`custom-status-trigger filter-status-trigger ${isOpen ? 'open' : ''}`}
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        <span className={`composition-status-badge ${selectedOption.badgeClass}`}>
+          {selectedOption.label}
+        </span>
+        <ChevronDownIcon className={`trigger-chevron ${isOpen ? 'rotate' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="custom-status-dropdown-menu filter-status-dropdown-menu">
+          {FILTER_STATUS_OPTIONS.map((option) => (
             <div
               key={option.value}
               className={`custom-status-option-item ${option.value === value ? 'selected' : ''}`}
@@ -507,8 +552,8 @@ export function AuthorCompositions() {
   const [error, setError] = useState(null)
 
   // Meta options (Categories & Tags)
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
-  const [tags, setTags] = useState(DEFAULT_TAGS)
+  const [categories, setCategories] = useState([])
+  const [tags, setTags] = useState([])
 
   // Filters & Tabs
   const [activeTab, setActiveTab] = useState('all') // 'all' | 'published' | 'draft'
@@ -552,9 +597,11 @@ export function AuthorCompositions() {
   }
 
   // Fetch novels from backend API
-  const loadNovels = async () => {
-    setLoading(true)
-    setError(null)
+  const loadNovels = async (isRefresh = false) => {
+    if (isRefresh) {
+      setLoading(true)
+      setError(null)
+    }
     try {
       const data = await fetchMyNovels()
       setNovels(data || [])
@@ -569,16 +616,21 @@ export function AuthorCompositions() {
   const loadMeta = async () => {
     try {
       const [catData, tagData] = await Promise.all([fetchCategories(), fetchTags()])
-      if (catData && catData.length > 0) setCategories(catData)
-      if (tagData && tagData.length > 0) setTags(tagData)
-    } catch (err) {
-      console.log('Using default categories & tags')
+      setCategories(catData || [])
+      setTags(tagData || [])
+    } catch {
+      setCategories([])
+      setTags([])
     }
   }
 
   useEffect(() => {
-    loadNovels()
-    loadMeta()
+    const init = async () => {
+      await Promise.resolve()
+      loadNovels()
+      loadMeta()
+    }
+    init()
   }, [])
 
   // Create novel submit handler
@@ -867,17 +919,7 @@ export function AuthorCompositions() {
 
             <div className="status-select-wrapper">
               <label htmlFor="status-filter">Trạng thái:</label>
-              <select
-                id="status-filter"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="draft">Bản nháp</option>
-                <option value="ongoing">Đang tiến hành</option>
-                <option value="completed">Đã hoàn thành</option>
-                <option value="hiatus">Tạm ngưng</option>
-              </select>
+              <FilterStatusSelect value={statusFilter} onChange={setStatusFilter} />
             </div>
           </div>
         </section>

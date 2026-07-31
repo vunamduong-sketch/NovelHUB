@@ -131,24 +131,24 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
 
   // Live search query effect
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      setShowSearchDropdown(false)
-      return
-    }
-
     const timer = setTimeout(async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+        setShowSearchDropdown(false)
+        return
+      }
+
       setIsSearching(true)
       setShowSearchDropdown(true)
       try {
         const data = await fetchPublicNovels({ search: searchQuery.trim() })
         setSearchResults(data || [])
-      } catch (err) {
+      } catch {
         setSearchResults([])
       } finally {
         setIsSearching(false)
       }
-    }, 200)
+    }, searchQuery.trim() ? 200 : 0)
 
     return () => clearTimeout(timer)
   }, [searchQuery])

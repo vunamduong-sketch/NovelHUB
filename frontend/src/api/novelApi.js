@@ -47,7 +47,7 @@ export async function fetchPublicNovels(params = {}) {
   try {
     const response = await api.get('/novels/', { params })
     return response.data
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -127,7 +127,7 @@ export async function fetchCategories() {
   try {
     const response = await api.get('/novels/categories')
     return response.data
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -136,7 +136,7 @@ export async function fetchTags() {
   try {
     const response = await api.get('/novels/tags')
     return response.data
-  } catch (error) {
+  } catch {
     return []
   }
 }

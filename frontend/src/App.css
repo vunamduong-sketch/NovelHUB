@@ -1725,6 +1725,7 @@
   font-size: 13px;
   font-weight: 650;
   color: #6f6b7a;
+  min-width: 0;
 }
 
 .status-select-wrapper select {
@@ -1737,6 +1738,20 @@
   font-size: 14px;
   outline: none;
   cursor: pointer;
+}
+
+.status-select-wrapper .filter-status-select-container {
+  width: 220px;
+  flex: 0 0 220px;
+}
+
+.status-select-wrapper .filter-status-trigger {
+  height: 42px;
+  background: #ffffff !important;
+}
+
+.status-select-wrapper .filter-status-dropdown-menu {
+  min-width: 220px;
 }
 
 /* Novel Compositions Grid */
