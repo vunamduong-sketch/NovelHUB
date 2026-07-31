@@ -1,4 +1,4 @@
-# NovelHub User Management API Contract
+# NovelHub User Management 
 
 Tài liệu này mô tả module User Management cho giai đoạn tiếp theo, giữ nguyên nguyên tắc không xung đột với module Authentication hiện tại.
 
@@ -167,14 +167,13 @@ Errors:
 Chạy từ thư mục backend của project:
 
 ```powershell
-cd backend
 python -m pytest tests/test_user_schema.py tests/test_security.py -q
 ```
 
 Nếu project đang dùng virtual environment, có thể kích hoạt môi trường trước rồi chạy:
 
 ```powershell
-.venv\Scripts\Activate.ps1
+..\.venv\Scripts\Activate.ps1
 python -m pytest tests/test_user_schema.py tests/test_security.py -q
 ```
 
@@ -185,7 +184,7 @@ Integration test cần PostgreSQL đang chạy và nên dùng database test riê
 Chạy từ thư mục `backend` của project:
 
 ```powershell
-cd backend
+..\.venv\Scripts\Activate.ps1
 ```
 
 Tạo database test riêng nếu chưa có:
