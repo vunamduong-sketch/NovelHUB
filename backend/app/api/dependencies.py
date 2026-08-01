@@ -38,3 +38,21 @@ def require_author(
     if "author" not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Author role required")
     return current_user
+
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    if credentials is None:
+        return None
+    from app.core.config import settings
+    try:
+        payload = decode_token(credentials.credentials, "access", settings)
+        user_id = uuid.UUID(payload["sub"])
+    except (ValueError, KeyError, Exception):
+        return None
+    user = AuthRepository(db).get_user_by_id(user_id)
+    if user is None or user.status != "active" or user.deleted_at is not None:
+        return None
+    return user
