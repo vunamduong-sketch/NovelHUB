@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail, fetchCategories } from '../../api/novelApi.js'
+import { fetchPublicChapters } from '../../api/chapterApi.js'
 
 // 2D Vector Monochrome Icons
 function BookOpenIcon() {
@@ -89,6 +90,7 @@ export function NovelDetail() {
 
   const [novel, setNovel] = useState(null)
   const [categories, setCategories] = useState([])
+  const [chapters, setChapters] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -103,12 +105,14 @@ export function NovelDetail() {
       setLoading(true)
       setErrorMsg('')
       try {
-        const [novelData, catsData] = await Promise.all([
+        const [novelData, catsData, chaptersData] = await Promise.all([
           getNovelDetail(id),
           fetchCategories(),
+          fetchPublicChapters(id),
         ])
         setNovel(novelData)
         setCategories(catsData || [])
+        setChapters(chaptersData || [])
       } catch (err) {
         setErrorMsg(err.message || 'Không thể tải thông tin tác phẩm này.')
       } finally {
@@ -276,7 +280,7 @@ export function NovelDetail() {
                 <div className="detail-stat-item">
                   <div className="stat-value-box text-chapters">
                     <ListIcon />
-                    <strong>0</strong>
+                    <strong>{chapters.length}</strong>
                   </div>
                   <span className="stat-label">Chương</span>
                 </div>
@@ -297,7 +301,13 @@ export function NovelDetail() {
                 <button 
                   type="button" 
                   className="primary-button detail-cta-btn"
-                  onClick={() => showToast('Chức năng đọc chương đang được hoàn thiện!')}
+                  onClick={() => {
+                    if (chapters.length > 0) {
+                      navigate(`/novels/${novel.id}/chapters/${chapters[0].id}`)
+                    } else {
+                      showToast('Truyện này hiện chưa có chương nào được xuất bản.')
+                    }
+                  }}
                 >
                   <BookOpenIcon />
                   <span>Đọc Truyện</span>
@@ -344,7 +354,7 @@ export function NovelDetail() {
               onClick={() => setActiveTab('chapters')}
             >
               <ListIcon />
-              <span>Danh Sách Chương (0)</span>
+              <span>Danh Sách Chương ({chapters.length})</span>
             </button>
           </div>
 
@@ -372,13 +382,41 @@ export function NovelDetail() {
               </div>
             ) : (
               <div className="chapters-tab-pane">
-                <div className="empty-state-card sub-empty-card" style={{ padding: '48px 24px' }}>
-                  <div className="empty-icon-circle">
-                    <ListIcon />
+                {chapters.length === 0 ? (
+                  <div className="empty-state-card sub-empty-card" style={{ padding: '48px 24px' }}>
+                    <div className="empty-icon-circle">
+                      <ListIcon />
+                    </div>
+                    <h3>Chưa Có Chương Nào Đăng Tải</h3>
+                    <p>Tác giả hiện chưa xuất bản chương tiếp theo cho tác phẩm này. Nhấn <strong>"Theo Dõi"</strong> để nhận thông báo tự động ngay khi có chương mới!</p>
                   </div>
-                  <h3>Chưa Có Chương Nào Đăng Tải</h3>
-                  <p>Tác giả hiện chưa xuất bản chương tiếp theo cho tác phẩm này. Nhấn <strong>"Theo Dõi"</strong> để nhận thông báo tự động ngay khi có chương mới!</p>
-                </div>
+                ) : (
+                  <div className="chapters-list-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', padding: '10px 0' }}>
+                    {chapters.map((ch) => (
+                      <Link
+                        key={ch.id}
+                        to={`/novels/${novel.id}/chapters/${ch.id}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          padding: '16px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          backgroundColor: 'rgba(0,0,0,0.01)',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.01)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <span style={{ fontSize: '13px', color: 'gray', fontWeight: 'bold' }}>Chương {Number(ch.chapter_number)}</span>
+                        <span style={{ fontSize: '16px', fontWeight: '600', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.title}</span>
+                        <span style={{ fontSize: '12px', color: 'gray', marginTop: '8px' }}>{ch.word_count} từ • {new Date(ch.published_at || ch.created_at).toLocaleDateString('vi-VN')}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

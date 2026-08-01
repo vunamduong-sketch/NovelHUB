@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import {
@@ -1058,6 +1059,22 @@ export function AuthorCompositions() {
                             <span>Xuất bản</span>
                           </button>
                         )}
+
+                        <Link
+                          to={`/author/novels/${novel.id}/chapters`}
+                          className="action-btn edit-action-btn"
+                          title="Quản lý chương truyện"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            textDecoration: 'none',
+                            color: 'inherit',
+                          }}
+                        >
+                          <BookOpenIcon />
+                          <span>Chương</span>
+                        </Link>
 
                         <button
                           type="button"
