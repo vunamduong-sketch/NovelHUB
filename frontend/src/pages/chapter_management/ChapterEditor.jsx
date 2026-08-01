@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
-import { getNovelDetail } from '../../api/novelApi.js'
+import { getNovelDetail, getAuthorNovelDetail } from '../../api/novelApi.js'
 import { getAuthorChapterDetail, createChapter, updateChapter } from '../../api/chapterApi.js'
+
 
 function ArrowLeftIcon() {
   return (
@@ -55,8 +56,9 @@ export function ChapterEditor() {
       setLoading(true)
       setError(null)
       try {
-        const novelData = await getNovelDetail(novelId)
+        const novelData = await getAuthorNovelDetail(novelId)
         setNovel(novelData)
+
 
         if (isEditMode) {
           const chapterData = await getAuthorChapterDetail(chapterId)

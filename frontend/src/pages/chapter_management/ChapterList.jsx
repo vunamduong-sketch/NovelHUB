@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
-import { getNovelDetail } from '../../api/novelApi.js'
+import { getNovelDetail, getAuthorNovelDetail } from '../../api/novelApi.js'
 import { fetchMyChapters, deleteChapter, publishChapter } from '../../api/chapterApi.js'
+
 
 function ArrowLeftIcon() {
   return (
@@ -73,7 +74,7 @@ export function ChapterList() {
     setError(null)
     try {
       const [novelData, chaptersData] = await Promise.all([
-        getNovelDetail(novelId),
+        getAuthorNovelDetail(novelId),
         fetchMyChapters(novelId)
       ])
       setNovel(novelData)
@@ -199,9 +200,20 @@ export function ChapterList() {
                 <Link
                   to={`/author/novels/${novelId}/chapters/create`}
                   className="primary-button"
-                  style={{ textDecoration: 'none', display: 'inline-flex', maxWidth: '200px', marginTop: '16px' }}
+                  style={{
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    margin: '20px auto 0 auto',
+                    width: 'fit-content',
+                    padding: '12px 24px',
+                    fontSize: '15px',
+                    fontWeight: '600'
+                  }}
                 >
-                  <PlusIcon /> Viết chương ngay
+                  <PlusIcon /> <span>Viết chương ngay</span>
                 </Link>
               </div>
             ) : (

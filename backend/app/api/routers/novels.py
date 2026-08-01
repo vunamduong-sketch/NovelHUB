@@ -183,3 +183,19 @@ def get_novel_detail(
     except NovelNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return _novel_response(novel, tags, author_name=author_name)
+
+
+@router.get("/{novel_id}/author", response_model=NovelResponse)
+def get_author_novel_detail(
+    novel_id: uuid.UUID,
+    current_user: User = Depends(require_author),
+    service: NovelService = Depends(get_novel_service),
+) -> NovelResponse:
+    try:
+        novel = service._get_author_novel(current_user, novel_id)
+        tags = service.repository.get_tags_for_novel(novel.id)
+        author_name = current_user.display_name or current_user.username
+    except NovelNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return _novel_response(novel, tags, author_name=author_name)
+

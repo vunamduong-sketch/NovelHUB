@@ -123,6 +123,16 @@ export async function getNovelDetail(novelId) {
   }
 }
 
+export async function getAuthorNovelDetail(novelId) {
+  try {
+    const response = await api.get(`/novels/${novelId}/author`)
+    return response.data
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
+  }
+}
+
+
 export async function fetchCategories() {
   try {
     const response = await api.get('/novels/categories')
