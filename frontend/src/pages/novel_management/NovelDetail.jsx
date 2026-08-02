@@ -98,6 +98,9 @@ export function NovelDetail() {
   const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'chapters'
   const [isFollowing, setIsFollowing] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
 
   useEffect(() => {
     const init = async () => {
@@ -137,6 +140,21 @@ export function NovelDetail() {
     showToast('Đã sao chép đường dẫn tác phẩm vào bộ nhớ tạm!')
   }
 
+  const filteredChapters = chapters.filter((ch) => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+    return (
+      ch.title.toLowerCase().includes(query) ||
+      Number(ch.chapter_number).toString().includes(query)
+    )
+  })
+
+  const totalPages = Math.ceil(filteredChapters.length / ITEMS_PER_PAGE)
+  const paginatedChapters = filteredChapters.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
   if (loading) {
     return (
       <div className="home-layout">
@@ -163,9 +181,9 @@ export function NovelDetail() {
             </div>
             <h3>Không Tìm Thấy Tác Phẩm</h3>
             <p>{errorMsg || 'Tác phẩm bạn tìm kiếm không tồn tại hoặc đã bị gỡ bỏ.'}</p>
-            <button 
-              type="button" 
-              className="primary-button" 
+            <button
+              type="button"
+              className="primary-button"
               style={{ marginTop: '16px' }}
               onClick={() => navigate('/')}
             >
@@ -208,9 +226,9 @@ export function NovelDetail() {
             {/* Left Column: Novel Cover Box */}
             <div className="detail-cover-wrapper">
               {novel.cover_url ? (
-                <img 
-                  src={novel.cover_url} 
-                  alt={novel.title} 
+                <img
+                  src={novel.cover_url}
+                  alt={novel.title}
                   className="detail-cover-img"
                   onError={(e) => {
                     e.target.style.display = 'none'
@@ -241,7 +259,7 @@ export function NovelDetail() {
                 {categoryObj && (
                   <span className="detail-category-badge">{categoryObj.name}</span>
                 )}
-                
+
                 <span className="detail-lang-badge">Ngôn ngữ: Vi</span>
               </div>
 
@@ -298,8 +316,8 @@ export function NovelDetail() {
 
               {/* Action Buttons Toolbar */}
               <div className="detail-action-buttons">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="primary-button detail-cta-btn"
                   onClick={() => {
                     if (chapters.length > 0) {
@@ -313,8 +331,8 @@ export function NovelDetail() {
                   <span>Đọc Truyện</span>
                 </button>
 
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={`secondary-button detail-action-btn ${isFollowing ? 'active' : ''}`}
                   onClick={handleToggleFollow}
                 >
@@ -322,8 +340,8 @@ export function NovelDetail() {
                   <span>{isFollowing ? 'Đã Theo Dõi' : 'Theo Dõi'}</span>
                 </button>
 
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="secondary-button detail-action-btn"
                   onClick={handleShare}
                 >
@@ -337,24 +355,198 @@ export function NovelDetail() {
 
         {/* Sub-Navigation Tabs & Main Content Body */}
         <section className="detail-content-section">
+          <style>{`
+            .detail-tabs-bar {
+              display: flex !important;
+              border-bottom: 2px solid #e5e7eb !important;
+              margin-bottom: 20px !important;
+              width: 100% !important;
+              background: transparent !important;
+              gap: 0 !important;
+            }
+            .detail-tab-btn {
+              flex: 1 !important;
+              background: none !important;
+              border: none !important;
+              border-radius: 0 !important;
+              padding: 14px 16px !important;
+              font-size: 16px !important;
+              font-weight: 600 !important;
+              color: #4b5563 !important;
+              cursor: pointer !important;
+              position: relative !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              gap: 8px !important;
+              transition: all 0.2s ease !important;
+              box-shadow: none !important;
+            }
+            .detail-tab-btn:hover {
+              color: #111827 !important;
+              background: #f3f4f6 !important;
+            }
+            .detail-tab-btn.active {
+              color: #111827 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+            }
+            .detail-tab-btn.active::after {
+              content: '' !important;
+              position: absolute !important;
+              bottom: -2px !important;
+              left: 0 !important;
+              right: 0 !important;
+              height: 3px !important;
+              background-color: #3b82f6 !important;
+            }
+
+            .custom-chapter-section {
+              background: #ffffff;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 20px;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            }
+            .chapter-search-box {
+              position: relative;
+              display: flex;
+              align-items: center;
+              margin-bottom: 16px;
+            }
+            .chapter-search-box .search-icon {
+              position: absolute;
+              left: 14px;
+              color: #9ca3af;
+            }
+            .chapter-search-box input {
+              width: 100%;
+              padding: 12px 12px 12px 42px;
+              border: 1px solid #e5e7eb;
+              border-radius: 6px;
+              font-size: 14px;
+              outline: none;
+              color: #1f2937;
+              background-color: #f9fafb;
+              transition: all 0.2s ease;
+            }
+            .chapter-search-box input:focus {
+              border-color: #3b82f6;
+              background-color: #ffffff;
+              box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+            .chapter-vertical-list {
+              max-height: 480px;
+              overflow-y: auto;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              padding-right: 6px;
+            }
+            .chapter-vertical-list::-webkit-scrollbar {
+              width: 8px;
+            }
+            .chapter-vertical-list::-webkit-scrollbar-track {
+              background: #f1f5f9;
+              border-radius: 4px;
+            }
+            .chapter-vertical-list::-webkit-scrollbar-thumb {
+              background: #cbd5e1;
+              border-radius: 4px;
+            }
+            .chapter-vertical-list::-webkit-scrollbar-thumb:hover {
+              background: #94a3b8;
+            }
+            .chapter-vertical-item {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              padding: 12px 16px;
+              border-radius: 6px;
+              background-color: #f9fafb;
+              border: 1px solid #f3f4f6;
+              text-decoration: none;
+              color: #1f2937;
+              transition: all 0.2s ease;
+            }
+            .chapter-vertical-item:hover {
+              background-color: #f3f4f6;
+              border-color: #e5e7eb;
+              transform: translateX(4px);
+            }
+            .chapter-num-badge {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 32px;
+              height: 28px;
+              background-color: #ffffff;
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              font-size: 13px;
+              font-weight: 700;
+              color: #4b5563;
+            }
+            .chapter-item-title {
+              font-size: 15px;
+              font-weight: 500;
+            }
+            .chapter-pagination {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 8px;
+              margin-top: 20px;
+            }
+            .page-btn {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 32px;
+              height: 32px;
+              padding: 0 10px;
+              border: 1px solid #e5e7eb;
+              background-color: #ffffff;
+              border-radius: 4px;
+              color: #4b5563;
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .page-btn:hover {
+              background-color: #f9fafb;
+              border-color: #cbd5e1;
+            }
+            .page-btn.active {
+              background-color: #3b82f6;
+              border-color: #3b82f6;
+              color: #ffffff;
+            }
+            .no-search-results {
+              text-align: center;
+              color: #6b7280;
+              padding: 30px;
+              font-size: 15px;
+            }
+          `}</style>
+
           {/* Sub Navigation Bar */}
           <div className="detail-tabs-bar">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`detail-tab-btn ${activeTab === 'summary' ? 'active' : ''}`}
               onClick={() => setActiveTab('summary')}
             >
-              <BookOpenIcon />
-              <span>Giới Thiệu & Tóm Tắt</span>
+              <span>Tóm tắt</span>
             </button>
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`detail-tab-btn ${activeTab === 'chapters' ? 'active' : ''}`}
               onClick={() => setActiveTab('chapters')}
             >
-              <ListIcon />
-              <span>Danh Sách Chương ({chapters.length})</span>
+              <span>DS. chương</span>
             </button>
           </div>
 
@@ -375,7 +567,7 @@ export function NovelDetail() {
                 {/* Copyright & Publishing Statement Card */}
                 <div className="publishing-rights-card">
                   <p>
-                    © Tác phẩm sáng tác và đăng tải bởi tác giả <strong>{novel.author_name || 'NovelHUB Author'}</strong> trên nền tảng NovelHUB. 
+                    © Tác phẩm sáng tác và đăng tải bởi tác giả <strong>{novel.author_name || 'NovelHUB Author'}</strong> trên nền tảng NovelHUB.
                     Mọi quyền bản quyền nội dung thuộc về tác giả sáng tác.
                   </p>
                 </div>
@@ -391,30 +583,76 @@ export function NovelDetail() {
                     <p>Tác giả hiện chưa xuất bản chương tiếp theo cho tác phẩm này. Nhấn <strong>"Theo Dõi"</strong> để nhận thông báo tự động ngay khi có chương mới!</p>
                   </div>
                 ) : (
-                  <div className="chapters-list-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', padding: '10px 0' }}>
-                    {chapters.map((ch) => (
-                      <Link
-                        key={ch.id}
-                        to={`/novels/${novel.id}/chapters/${ch.id}`}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          padding: '16px',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border-color)',
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          backgroundColor: 'rgba(0,0,0,0.01)',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.01)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        <span style={{ fontSize: '13px', color: 'gray', fontWeight: 'bold' }}>Chương {Number(ch.chapter_number)}</span>
-                        <span style={{ fontSize: '16px', fontWeight: '600', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.title}</span>
-                        <span style={{ fontSize: '12px', color: 'gray', marginTop: '8px' }}>{ch.word_count} từ • {new Date(ch.published_at || ch.created_at).toLocaleDateString('vi-VN')}</span>
-                      </Link>
-                    ))}
+                  <div className="custom-chapter-section">
+                    {/* Search Input */}
+                    <div className="chapter-search-box">
+                      <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Tìm theo số chương hoặc tên chương"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                      />
+                    </div>
+
+                    {/* Chapter Scrollable List */}
+                    <div className="chapter-vertical-list">
+                      {paginatedChapters.length === 0 ? (
+                        <p className="no-search-results">Không tìm thấy chương phù hợp.</p>
+                      ) : (
+                        paginatedChapters.map((ch) => (
+                          <Link
+                            key={ch.id}
+                            to={`/novels/${novel.id}/chapters/${ch.id}`}
+                            className="chapter-vertical-item"
+                          >
+                            <div className="chapter-num-badge">
+                              {Number(ch.chapter_number)}
+                            </div>
+                            <div className="chapter-item-title">
+                              {ch.title}
+                            </div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="chapter-pagination">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            type="button"
+                            className={`page-btn ${currentPage === page ? 'active' : ''}`}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        {currentPage < totalPages && (
+                          <>
+                            <button
+                              type="button"
+                              className="page-btn"
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                            >
+                              &gt;
+                            </button>
+                            <button
+                              type="button"
+                              className="page-btn"
+                              onClick={() => setCurrentPage(totalPages)}
+                            >
+                              Cuối
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

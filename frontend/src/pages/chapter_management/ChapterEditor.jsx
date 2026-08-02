@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
-import { getNovelDetail, getAuthorNovelDetail } from '../../api/novelApi.js'
+import { getAuthorNovelDetail } from '../../api/novelApi.js'
 import { getAuthorChapterDetail, createChapter, updateChapter } from '../../api/chapterApi.js'
 
 

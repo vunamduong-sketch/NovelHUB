@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
-import { getNovelDetail, getAuthorNovelDetail } from '../../api/novelApi.js'
+import { getAuthorNovelDetail } from '../../api/novelApi.js'
 import { fetchMyChapters, deleteChapter, publishChapter } from '../../api/chapterApi.js'
 
 
@@ -69,7 +69,7 @@ export function ChapterList() {
     setTimeout(() => setToast(null), 4000)
   }
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -84,11 +84,13 @@ export function ChapterList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [novelId])
 
   useEffect(() => {
-    loadData()
-  }, [novelId])
+    Promise.resolve().then(() => {
+      loadData()
+    })
+  }, [loadData])
 
   const handlePublish = async (chapterId) => {
     try {

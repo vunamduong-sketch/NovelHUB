@@ -20,7 +20,9 @@ Reader hoặc người dùng public có thể:
 
 ## Nguyên tắc không xung đột với module hiện có
 
-- Không thay đổi API contract của `/api/v1/auth/*`, `/api/v1/users/*`, `/api/v1/novels/*`.
+- Không thay đổi API contract của `/api/v1/auth/*`.
+- Không thay đổi API contract của `/api/v1/users/*`.
+- Không thay đổi API contract của `/api/v1/novels/*` (ngoại trừ việc đăng ký thêm các sub-routes liên quan đến chapters).
 - Chapter Management dùng router, service, repository và schema riêng.
 - Endpoint của author dùng chung `get_current_user` kết hợp `require_author`.
 - Endpoint reader/public không yêu cầu xác thực, chỉ trả về các chương `published` và thuộc về novel public.
@@ -58,19 +60,19 @@ Prefix: `/api/v1`
 | `DELETE /chapters/{chapter_id}` | author | Bearer access token | `200` message | `401`, `403`, `404` |
 | `POST /chapters/{chapter_id}/publish` | author | Bearer access token | `200` published chapter | `400`, `401`, `403`, `404` |
 
----
+Validation errors của FastAPI trả `422` với mảng `detail`. Business errors trả `{ "detail": "..." }`. Message-only response dùng `{ "message": "..." }`.
 
-## Chi tiết Endpoints
-
-### 1. POST `/api/v1/novels/{novel_id}/chapters`
+## 1. POST `/api/v1/novels/{novel_id}/chapters`
 
 Tạo chapter mới cho novel của author đang đăng nhập.
 
 Authentication:
-- Bắt buộc Bearer access token.
+
+- Bắt buộc Bearer access token hợp lệ.
 - User phải có role `author` và là chủ sở hữu của bộ truyện.
 
 Request body:
+
 ```json
 {
   "title": "Chương 1: Khởi Đầu",
@@ -82,6 +84,7 @@ Request body:
 ```
 
 Rules:
+
 - `title`: bắt buộc, 1-250 ký tự sau khi trim.
 - `chapter_number`: bắt buộc, số dương (lớn hơn 0), định dạng Decimal để hỗ trợ chương phụ (VD: 1.5). Không được trùng lặp `chapter_number` trong cùng một truyện.
 - `content`: chuỗi nội dung chương (mặc định rỗng).
@@ -91,83 +94,328 @@ Rules:
 - `slug` được sinh tự động từ `title` và đảm bảo duy nhất trong phạm vi bộ truyện đó.
 - Nếu `status = "published"`, backend tự động thiết lập thời gian `published_at = datetime.now(timezone.utc)`.
 
----
+Success `201`:
 
-### 2. GET `/api/v1/novels/{novel_id}/chapters`
+```json
+{
+  "id": "uuid",
+  "novel_id": "uuid",
+  "title": "Chương 1: Khởi Đầu",
+  "slug": "chuong-1-khoi-dau",
+  "chapter_number": 1.0,
+  "summary": "Tóm tắt chương (tùy chọn)",
+  "word_count": 4,
+  "status": "draft",
+  "published_at": null,
+  "view_count": 0,
+  "created_at": "2026-08-02T15:00:00Z",
+  "updated_at": "2026-08-02T15:00:00Z",
+  "content": "Nội dung chương truyện..."
+}
+```
 
-Lấy danh sách chương đã xuất bản công khai dành cho độc giả. Không yêu cầu xác thực.
+Errors:
 
-Success `200`: Trả về mảng danh sách chương đã sắp xếp theo `chapter_number` tăng dần. Dữ liệu trả về lược bỏ trường `content` để tối ưu dung lượng truyền tải.
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: user không có role `author` hoặc không sở hữu novel.
+- `404`: novel không tồn tại hoặc đã bị xóa.
+- `409`: số chương `chapter_number` hoặc `slug` bị trùng lặp trong truyện.
+- `422`: validation error.
 
----
+## 2. GET `/api/v1/novels/{novel_id}/chapters`
 
-### 3. GET `/api/v1/novels/{novel_id}/chapters/me`
+Lấy danh sách chương đã xuất bản công khai dành cho độc giả.
+
+Authentication:
+
+- Không bắt buộc đăng nhập.
+
+Rules:
+
+- Chỉ trả các chapter của novel có:
+  - `status = "published"`
+  - Novel đó phải public (`visibility = "public"`) và không bị soft delete (`deleted_at IS NULL`).
+  - Chapter không bị soft delete (`deleted_at IS NULL`).
+- Kết quả được sắp xếp theo `chapter_number` tăng dần.
+- Dữ liệu trả về lược bỏ trường `content` để tối ưu dung lượng truyền tải.
+
+Success `200`:
+
+```json
+[
+  {
+    "id": "uuid",
+    "novel_id": "uuid",
+    "title": "Chương 1: Khởi Đầu",
+    "slug": "chuong-1-khoi-dau",
+    "chapter_number": 1.0,
+    "summary": "Tóm tắt chương (tùy chọn)",
+    "word_count": 4,
+    "status": "published",
+    "published_at": "2026-08-02T15:00:00Z",
+    "view_count": 10,
+    "created_at": "2026-08-02T15:00:00Z",
+    "updated_at": "2026-08-02T15:00:00Z"
+  }
+]
+```
+
+Errors:
+
+- `404`: novel không tồn tại hoặc không public.
+
+## 3. GET `/api/v1/novels/{novel_id}/chapters/me`
 
 Lấy toàn bộ danh sách chương (bao gồm cả nháp/hẹn giờ) dành riêng cho tác giả quản lý truyện.
 
 Authentication:
-- Bắt buộc Bearer access token.
+
+- Bắt buộc Bearer access token hợp lệ.
 - User phải có role `author` và là chủ sở hữu truyện.
 
----
+Rules:
 
-### 4. GET `/api/v1/chapters/{chapter_id}`
+- Chỉ trả các chapter thuộc về novel của tác giả đang đăng nhập.
+- Không trả các chapter đã bị soft delete (`deleted_at IS NULL`).
+- Có thể trả về các chương có trạng thái bất kỳ (`draft`, `scheduled`, `published`).
+- Kết quả sắp xếp theo `chapter_number` tăng dần.
+- Dữ liệu trả về lược bỏ trường `content`.
 
-Đọc nội dung chi tiết một chương truyện công khai. Không yêu cầu xác thực.
-Hệ thống sẽ tăng `view_count` lên 1 đơn vị mỗi lần gọi thành công.
+Success `200`: Trả về danh sách tương tự endpoint GET public nhưng bao gồm cả các chương nháp.
 
----
+Errors:
 
-### 5. GET `/api/v1/chapters/{chapter_id}/author`
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: user không có role `author` hoặc không sở hữu novel.
+- `404`: novel không tồn tại hoặc đã bị xóa.
+
+## 4. GET `/api/v1/chapters/{chapter_id}`
+
+Đọc nội dung chi tiết một chương truyện công khai.
+
+Authentication:
+
+- Không bắt buộc đăng nhập.
+
+Rules:
+
+- Chương phải có trạng thái `status = "published"`.
+- Novel tương ứng phải public và không bị soft delete.
+- Hệ thống sẽ tăng `view_count` lên 1 đơn vị mỗi lần gọi thành công.
+
+Success `200`: Trả về chi tiết chương bao gồm cả trường `content`.
+
+```json
+{
+  "id": "uuid",
+  "novel_id": "uuid",
+  "title": "Chương 1: Khởi Đầu",
+  "slug": "chuong-1-khoi-dau",
+  "chapter_number": 1.0,
+  "summary": "Tóm tắt chương (tùy chọn)",
+  "word_count": 4,
+  "status": "published",
+  "published_at": "2026-08-02T15:00:00Z",
+  "view_count": 11,
+  "created_at": "2026-08-02T15:00:00Z",
+  "updated_at": "2026-08-02T15:00:00Z",
+  "content": "Nội dung chương truyện..."
+}
+```
+
+Errors:
+
+- `404`: chapter không tồn tại, chưa được xuất bản hoặc thuộc về novel không công khai.
+
+## 5. GET `/api/v1/chapters/{chapter_id}/author`
 
 Đọc nội dung chi tiết chương dành riêng cho tác giả (hỗ trợ đọc cả chương nháp để xem trước/chỉnh sửa).
 
 Authentication:
-- Bắt buộc Bearer access token.
+
+- Bắt buộc Bearer access token hợp lệ.
 - User phải là tác giả sở hữu truyện chứa chương đó.
 
----
+Rules:
 
-### 6. PATCH /api/v1/chapters/{chapter_id}
+- Cho phép đọc chi tiết chương ở bất kỳ trạng thái nào (`draft`, `scheduled`, `published`).
+- Không tăng `view_count` khi tác giả tự xem.
+
+Success `200`: Trả về chi tiết chương tương tự format của reader nhưng không giới hạn trạng thái chương.
+
+Errors:
+
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: không phải tác giả sở hữu chương truyện.
+- `404`: chapter không tồn tại hoặc đã bị xóa.
+
+## 6. PATCH `/api/v1/chapters/{chapter_id}`
 
 Chỉnh sửa nội dung chương truyện.
 
 Authentication:
-- Bắt buộc Bearer access token.
-- User phải là tác giả của truyện.
 
----
+- Bắt buộc Bearer access token hợp lệ.
+- User phải có role `author` và là chủ sở hữu truyện chứa chương đó.
 
-### 7. DELETE /api/v1/chapters/{chapter_id}
+Request body:
+
+```json
+{
+  "title": "Chương 1: Khởi Đầu Mới",
+  "chapter_number": 1.0,
+  "content": "Nội dung chương truyện đã cập nhật...",
+  "summary": "Tóm tắt cập nhật",
+  "status": "published"
+}
+```
+
+Rules:
+
+- Tất cả các trường là tùy chọn, nhưng phải cập nhật ít nhất một trường.
+- Nếu cập nhật `content`, backend tự động đếm lại `word_count`.
+- Nếu cập nhật `title`, `slug` được sinh mới và đảm bảo duy nhất trong truyện.
+- Nếu chuyển trạng thái `status` sang `published` từ `draft` và trước đó chưa từng publish, set `published_at = now`.
+- Không cho phép sửa chương đã bị soft delete.
+
+Success `200`: Trả về chi tiết chương sau khi cập nhật (chứa `content`).
+
+Errors:
+
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: không phải tác giả sở hữu chương truyện.
+- `404`: chapter không tồn tại hoặc đã bị xóa.
+- `409`: số chương hoặc slug trùng lặp sau khi sửa.
+- `422`: validation error.
+
+## 7. DELETE `/api/v1/chapters/{chapter_id}`
 
 Xóa chương truyện theo cơ chế xóa mềm (soft delete).
 
 Authentication:
-- Bắt buộc Bearer access token.
-- Thực hiện cập nhật trường `deleted_at = datetime.now(timezone.utc)`.
 
----
+- Bắt buộc Bearer access token hợp lệ.
+- User phải có role `author` và là chủ sở hữu truyện.
 
-### 8. POST /api/v1/chapters/{chapter_id}/publish
+Rules:
+
+- Không xóa cứng dòng khỏi DB.
+- Cập nhật trường `deleted_at = datetime.now(timezone.utc)`.
+- Chapter đã xóa mềm sẽ không xuất hiện ở bất kỳ API liệt kê hay xem chi tiết nào của reader/author.
+
+Success `200`:
+
+```json
+{
+  "message": "Chapter deleted successfully."
+}
+```
+
+Errors:
+
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: không phải tác giả sở hữu chương truyện.
+- `404`: chapter không tồn tại hoặc đã bị xóa trước đó.
+
+## 8. POST `/api/v1/chapters/{chapter_id}/publish`
 
 Xuất bản nhanh chương truyện từ trạng thái nháp.
 
----
+Authentication:
 
-## Hướng dẫn Kiểm thử (Testing)
+- Bắt buộc Bearer access token hợp lệ.
+- User phải có role `author` và là chủ sở hữu truyện.
 
-### 1. Unit Test (Schema Validation)
-Chạy bộ kiểm thử cấu trúc và tính hợp lệ của dữ liệu đầu vào:
-```bash
-python -m pytest -v tests/test_chapter_schema.py
+Rules:
+
+- Chương truyện phải chưa bị xóa mềm.
+- Chuyển `status = "published"`.
+- Cập nhật `published_at = datetime.now(timezone.utc)` nếu trước đó trường này là `null`.
+
+Success `200`: Trả về thông tin chương đã xuất bản (không chứa `content`).
+
+Errors:
+
+- `400`: chương truyện đã ở trạng thái `published`.
+- `401`: chưa đăng nhập hoặc token không hợp lệ.
+- `403`: không phải tác giả sở hữu chương truyện.
+- `404`: chapter không tồn tại hoặc đã bị xóa.
+
+## Unit test
+
+Unit test không cần database. Chạy từ thư mục `backend`:
+
+```powershell
+python -m pytest tests/test_chapter_schema.py -q
 ```
 
-### 2. Integration Test (API Workflows)
-Chạy bộ kiểm thử tích hợp kết nối Database thực tế (Docker):
+Các test này kiểm tra:
+
+- Schema tạo chapter tự động trim và loại bỏ khoảng trắng dư thừa ở tiêu đề.
+- `chapter_number` phải lớn hơn 0 và hỗ trợ số thập phân.
+- Schema update bắt buộc phải chứa ít nhất một trường thay đổi.
+- Bắt buộc chặn các trường không định nghĩa (`extra="forbid"`).
+
+## Integration test
+
+Integration test của Chapter Management cần PostgreSQL test database riêng. Test chỉ chạy khi có `NOVELHUB_TEST_DATABASE_URL`; nếu không có biến này thì test sẽ bị skip.
+
+### 1. Chuẩn bị biến môi trường
+
+Database test riêng dùng cố định tên `novelhub_chapter_management_test`.
+
+PowerShell:
+
+```powershell
+cd backend
+..\.venv\Scripts\Activate.ps1
+$env:POSTGRES_ADMIN_URL = "postgresql+psycopg://postgres:postgres@localhost:5433/postgres"
+$env:NOVELHUB_TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5433/novelhub_chapter_management_test"
+$env:DATABASE_URL = $env:NOVELHUB_TEST_DATABASE_URL
+```
+
+Bash:
+
 ```bash
-docker compose exec backend sh -c "NOVELHUB_TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@database:5432/novelhub python -m pytest -v tests/test_chapter_management_integration.py"
+cd backend
+export POSTGRES_ADMIN_URL="postgresql+psycopg://postgres:postgres@localhost:5433/postgres"
+export NOVELHUB_TEST_DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5433/novelhub_chapter_management_test"
+export DATABASE_URL="$NOVELHUB_TEST_DATABASE_URL"
+```
+
+### 2. Tạo database test riêng
+
+PowerShell/Bash:
+
+```bash
+python -c "import os; from sqlalchemy import create_engine, text; db_name='novelhub_chapter_management_test'; engine=create_engine(os.environ['POSTGRES_ADMIN_URL'], isolation_level='AUTOCOMMIT'); conn=engine.connect(); exists=conn.execute(text('SELECT 1 FROM pg_database WHERE datname = :name'), {'name': db_name}).scalar(); conn.execute(text(f'CREATE DATABASE {db_name}')) if not exists else None; conn.close()"
+```
+
+### 3. Chạy migration
+
+Chạy từ thư mục `backend`:
+
+```powershell
+python -m alembic upgrade head
+```
+
+### 4. Chạy integration test
+
+Chạy riêng Chapter Management integration test:
+
+```powershell
+python -m pytest tests/test_chapter_management_integration.py -q
+```
+
+### 5. Xóa database test sau khi chạy
+
+PowerShell/Bash:
+
+```bash
+python -c "import os; from sqlalchemy import create_engine, text; db_name='novelhub_chapter_management_test'; engine=create_engine(os.environ['POSTGRES_ADMIN_URL'], isolation_level='AUTOCOMMIT'); conn=engine.connect(); conn.execute(text(f'DROP DATABASE IF EXISTS {db_name} WITH (FORCE)')); conn.close()"
 ```
 
 ## Ghi chú Cơ sở dữ liệu (Database Notes)
-- Module sử dụng bảng `chapters` đã được định nghĩa sẵn tại [chapter.py](file:///d:/NovelHUB/backend/app/models/chapter.py).
+
+- Module sử dụng bảng `chapters` được định nghĩa tại [chapter.py](file:///d:/NovelHUB/backend/app/models/chapter.py).
 - Khóa ngoại `novel_id` liên kết với bảng `novels` có thuộc tính `ondelete="CASCADE"`. Khi một novel bị xóa, toàn bộ các chương thuộc novel đó sẽ tự động bị xóa theo ở tầng DB.
