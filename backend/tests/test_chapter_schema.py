@@ -47,3 +47,20 @@ def test_create_chapter_rejects_non_positive_number() -> None:
 def test_update_chapter_rejects_invalid_status() -> None:
     with pytest.raises(ValidationError):
         ChapterUpdateRequest(status="unknown_status")
+
+
+def test_create_chapter_rejects_empty_content() -> None:
+    with pytest.raises(ValidationError):
+        ChapterCreateRequest(title="Chapter 1", chapter_number=Decimal("1"), content="   ")
+
+    with pytest.raises(ValidationError):
+        ChapterCreateRequest(title="Chapter 1", chapter_number=Decimal("1"), content="")
+
+
+def test_update_chapter_rejects_empty_content() -> None:
+    with pytest.raises(ValidationError):
+        ChapterUpdateRequest(content="   ")
+
+    with pytest.raises(ValidationError):
+        ChapterUpdateRequest(content="")
+

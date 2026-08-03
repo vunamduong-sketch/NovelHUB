@@ -85,6 +85,8 @@ def create_chapter(
         )
     except NovelNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ChapterConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return _chapter_detail_response(chapter)
@@ -112,6 +114,8 @@ def get_my_chapters(
         chapters = service.get_author_chapters(current_user, novel_id)
     except NovelNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return [_chapter_response(c) for c in chapters]
 
 
@@ -137,6 +141,8 @@ def get_author_chapter_detail(
         chapter = service.get_author_chapter_detail(current_user, chapter_id)
     except (ChapterNotFoundError, NovelNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return _chapter_detail_response(chapter)
 
 
@@ -160,6 +166,8 @@ def update_chapter(
         )
     except (ChapterNotFoundError, NovelNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ChapterConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return _chapter_detail_response(chapter)
@@ -175,6 +183,8 @@ def delete_chapter(
         service.delete_chapter(current_user, chapter_id)
     except (ChapterNotFoundError, NovelNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return MessageResponse(message="Chapter deleted successfully.")
 
 
@@ -188,6 +198,8 @@ def publish_chapter(
         chapter = service.publish_chapter(current_user, chapter_id)
     except (ChapterNotFoundError, NovelNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ChapterPublishError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return _chapter_response(chapter)

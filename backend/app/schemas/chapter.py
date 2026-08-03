@@ -21,7 +21,7 @@ class ChapterCreateRequest(BaseModel):
 
     title: str = Field(min_length=1, max_length=250)
     chapter_number: Decimal = Field(gt=0)
-    content: str = Field(default="")
+    content: str = Field(min_length=1)
     summary: str | None = Field(default=None, max_length=5000)
     status: ChapterStatus = Field(default="draft")
 
@@ -31,6 +31,14 @@ class ChapterCreateRequest(BaseModel):
         normalized = value.strip()
         if not normalized:
             raise ValueError("Title must not be empty")
+        return normalized
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Content must not be empty")
         return normalized
 
     @field_validator("summary")
@@ -44,7 +52,7 @@ class ChapterUpdateRequest(BaseModel):
 
     title: str | None = Field(default=None, min_length=1, max_length=250)
     chapter_number: Decimal | None = Field(default=None, gt=0)
-    content: str | None = Field(default=None)
+    content: str | None = Field(default=None, min_length=1)
     summary: str | None = Field(default=None, max_length=5000)
     status: ChapterStatus | None = None
 
@@ -56,6 +64,16 @@ class ChapterUpdateRequest(BaseModel):
         normalized = value.strip()
         if not normalized:
             raise ValueError("Title must not be empty")
+        return normalized
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Content must not be empty")
         return normalized
 
     @field_validator("summary")

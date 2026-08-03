@@ -150,6 +150,11 @@ def test_chapter_crud_workflow(api):
     assert publish_resp.status_code == 200
     assert publish_resp.json()["status"] == "published"
 
+    # 9.5 Publish Chapter again (should fail with 400)
+    publish_again_resp = client.post(f"/api/v1/chapters/{chapter_id}/publish", headers=headers)
+    assert publish_again_resp.status_code == 400
+    assert publish_again_resp.json()["detail"] == "Chapter is already published"
+
     # 10. Check public list and detail (should work now)
     pub_list_resp = client.get(f"/api/v1/novels/{novel_id}/chapters")
     assert pub_list_resp.status_code == 200

@@ -92,6 +92,10 @@ export function ChapterEditor() {
       alert('Vui lòng nhập số thứ tự chương hợp lệ (lớn hơn 0).')
       return
     }
+    if (!content.trim()) {
+      alert('Vui lòng nhập nội dung chương.')
+      return
+    }
 
     setActionLoading(true)
     try {
@@ -236,15 +240,17 @@ export function ChapterEditor() {
                   Hủy bỏ
                 </button>
 
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => handleSubmit('draft')}
-                  disabled={actionLoading}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
-                >
-                  <SaveIcon /> {isEditMode && status === 'draft' ? 'Lưu nháp' : 'Lưu thành bản nháp'}
-                </button>
+                {status !== 'published' && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => handleSubmit('draft')}
+                    disabled={actionLoading}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+                  >
+                    <SaveIcon /> {isEditMode && status === 'draft' ? 'Lưu nháp' : 'Lưu thành bản nháp'}
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -253,7 +259,15 @@ export function ChapterEditor() {
                   disabled={actionLoading}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
                 >
-                  <PublishIcon /> Xuất bản ngay
+                  {status === 'published' ? (
+                    <>
+                      <SaveIcon /> Lưu thay đổi
+                    </>
+                  ) : (
+                    <>
+                      <PublishIcon /> Xuất bản ngay
+                    </>
+                  )}
                 </button>
               </div>
             </form>

@@ -126,6 +126,8 @@ class ChapterService:
 
     def publish_chapter(self, current_user: User, chapter_id: uuid.UUID) -> Chapter:
         chapter = self._get_author_chapter(current_user, chapter_id)
+        if chapter.status == "published":
+            raise ChapterPublishError("Chapter is already published")
         if not chapter.title.strip():
             raise ChapterPublishError("Chapter title is required before publishing")
 
@@ -165,9 +167,11 @@ class ChapterService:
         return chapter
 
     def _get_author_novel(self, current_user: User, novel_id: uuid.UUID) -> Novel:
-        novel = self.novel_repository.get_author_novel(novel_id, current_user.id)
+        novel = self.novel_repository.get_active_by_id(novel_id)
         if novel is None:
             raise NovelNotFoundError("Novel is not available")
+        if novel.author_id != current_user.id:
+            raise PermissionDeniedError("Permission denied")
         return novel
 
     def _get_author_chapter(self, current_user: User, chapter_id: uuid.UUID) -> Chapter:
