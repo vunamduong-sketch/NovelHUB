@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routers.auth import router as auth_router
 from app.api.routers.novels import router as novels_router
 from app.api.routers.users import router as users_router
+from app.api.routers.chapters import router as chapters_router
 from app.core.config import settings
 
 
@@ -17,6 +18,7 @@ app = FastAPI(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(novels_router, prefix="/api/v1")
+app.include_router(chapters_router, prefix="/api/v1")
 
 avatar_root = Path(settings.avatar_upload_dir).resolve()
 avatar_root.mkdir(parents=True, exist_ok=True)

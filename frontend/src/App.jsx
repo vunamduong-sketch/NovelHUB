@@ -8,6 +8,9 @@ import { HomePage } from './pages/HomePage.jsx'
 import { NovelDetail } from './pages/novel_management/NovelDetail.jsx'
 import { ProfilePage } from './pages/user_management/ProfilePage.jsx'
 import { AuthorCompositions } from './pages/novel_management/AuthorCompositions.jsx'
+import { ChapterList } from './pages/chapter_management/ChapterList.jsx'
+import { ChapterEditor } from './pages/chapter_management/ChapterEditor.jsx'
+import { ChapterReader } from './pages/chapter_management/ChapterReader.jsx'
 import './App.css'
 
 export default function App() {
@@ -15,6 +18,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/novels/:id" element={<NovelDetail />} />
+      <Route path="/novels/:novelId/chapters/:chapterId" element={<ChapterReader />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -22,6 +26,9 @@ export default function App() {
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/author/compositions" element={<ProtectedRoute><AuthorCompositions /></ProtectedRoute>} />
       <Route path="/novel-management/author-compositions" element={<ProtectedRoute><AuthorCompositions /></ProtectedRoute>} />
+      <Route path="/author/novels/:novelId/chapters" element={<ProtectedRoute><ChapterList /></ProtectedRoute>} />
+      <Route path="/author/novels/:novelId/chapters/create" element={<ProtectedRoute><ChapterEditor /></ProtectedRoute>} />
+      <Route path="/author/novels/:novelId/chapters/:chapterId/edit" element={<ProtectedRoute><ChapterEditor /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
