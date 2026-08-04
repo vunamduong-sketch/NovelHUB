@@ -70,6 +70,11 @@ alembic upgrade head
 API contract, quyết định bảo mật, biến môi trường và hướng dẫn test cho
 FCPMP-11 đến FCPMP-14 nằm tại [docs/authentication.md](docs/authentication.md).
 
+## Administration
+
+API quản lý user, novel, category và tag cùng hướng dẫn chạy giao diện admin
+nằm tại [docs/admin_management.md](docs/admin_management.md).
+
 ## Chạy bằng Docker
 
 Từ thư mục `NovelHUB/backend`:

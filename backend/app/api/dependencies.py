@@ -38,3 +38,13 @@ def require_author(
     if "author" not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Author role required")
     return current_user
+
+
+def require_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    roles = AuthRepository(db).get_role_codes(current_user.id)
+    if "admin" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
+    return current_user
