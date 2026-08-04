@@ -79,6 +79,11 @@ class AdminTagsService:
 
 
 def _slugify(value: str, *, fallback: str, max_length: int) -> str:
-    ascii_text = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
+    vietnamese_safe_value = value.replace("Đ", "D").replace("đ", "d")
+    ascii_text = (
+        unicodedata.normalize("NFKD", vietnamese_safe_value)
+        .encode("ascii", "ignore")
+        .decode()
+    )
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")
     return (slug or fallback)[:max_length].rstrip("-")

@@ -30,6 +30,21 @@ def test_create_category_generates_vietnamese_slug() -> None:
     repository.refresh.assert_called_once_with(category)
 
 
+def test_create_category_preserves_vietnamese_d_in_generated_slug() -> None:
+    repository = Mock()
+    repository.name_exists.return_value = False
+    repository.slug_exists.return_value = False
+
+    category = AdminCategoriesService(repository).create_category(
+        name="Đô thị hiện đại",
+        slug=None,
+        description=None,
+        is_active=True,
+    )
+
+    assert category.slug == "do-thi-hien-dai"
+
+
 def test_update_category_changes_only_requested_fields() -> None:
     category = Category(
         id=7,

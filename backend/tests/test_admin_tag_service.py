@@ -26,6 +26,19 @@ def test_create_tag_generates_vietnamese_slug() -> None:
     repository.refresh.assert_called_once_with(tag)
 
 
+def test_create_tag_preserves_vietnamese_d_in_generated_slug() -> None:
+    repository = Mock()
+    repository.name_exists.return_value = False
+    repository.slug_exists.return_value = False
+
+    tag = AdminTagsService(repository).create_tag(
+        name="Đam mỹ",
+        slug=None,
+    )
+
+    assert tag.slug == "dam-my"
+
+
 def test_update_tag_changes_name_and_slug() -> None:
     stored_tag = Tag(id=3, name="Fantasy", slug="fantasy")
     repository = Mock()

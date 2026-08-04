@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -122,13 +123,15 @@ export function TagsPage() {
         </TableContainer>
       </Paper>
 
-      <Dialog open={Boolean(editing)} onClose={saving ? undefined : () => setEditing(null)} maxWidth="sm" fullWidth PaperProps={{ component: 'form', onSubmit: handleSave }}>
-        <DialogTitle>{editing?.mode === 'create' ? 'Thêm nhãn' : 'Chỉnh sửa nhãn'}</DialogTitle>
-        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.2 }}>
-          <TextField label="Tên nhãn" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required fullWidth />
-          <TextField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} helperText="Để trống khi tạo để hệ thống tự sinh từ tên." fullWidth />
-        </DialogContent>
-        <DialogActions><Button onClick={() => setEditing(null)} disabled={saving}>Hủy</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu'}</Button></DialogActions>
+      <Dialog open={Boolean(editing)} onClose={saving ? undefined : () => setEditing(null)} maxWidth="sm" fullWidth>
+        <Box component="form" onSubmit={handleSave}>
+          <DialogTitle>{editing?.mode === 'create' ? 'Thêm nhãn' : 'Chỉnh sửa nhãn'}</DialogTitle>
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.2 }}>
+            <TextField label="Tên nhãn" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required fullWidth />
+            <TextField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} helperText="Để trống khi tạo để hệ thống tự sinh từ tên." fullWidth />
+          </DialogContent>
+          <DialogActions><Button onClick={() => setEditing(null)} disabled={saving}>Hủy</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu'}</Button></DialogActions>
+        </Box>
       </Dialog>
 
       <ConfirmDialog open={Boolean(deleting)} title="Xóa nhãn?" message={`Nhãn “${deleting?.name || ''}” và các liên kết với tiểu thuyết sẽ bị xóa.`} busy={deleteBusy} onCancel={() => setDeleting(null)} onConfirm={handleDelete} />

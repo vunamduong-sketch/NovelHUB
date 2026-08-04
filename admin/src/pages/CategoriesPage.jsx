@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
+  Box,
   Button,
   Chip,
   CircularProgress,
@@ -136,15 +137,17 @@ export function CategoriesPage() {
         </TableContainer>
       </Paper>
 
-      <Dialog open={Boolean(editing)} onClose={saving ? undefined : () => setEditing(null)} maxWidth="sm" fullWidth PaperProps={{ component: 'form', onSubmit: handleSave }}>
-        <DialogTitle>{editing?.mode === 'create' ? 'Thêm thể loại' : 'Chỉnh sửa thể loại'}</DialogTitle>
-        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.2 }}>
-          <TextField label="Tên thể loại" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required fullWidth />
-          <TextField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} helperText="Để trống khi tạo để hệ thống tự sinh từ tên." fullWidth />
-          <TextField label="Mô tả" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} multiline minRows={3} fullWidth />
-          <FormControlLabel control={<Switch checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} />} label="Đang hoạt động" />
-        </DialogContent>
-        <DialogActions><Button onClick={() => setEditing(null)} disabled={saving}>Hủy</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu'}</Button></DialogActions>
+      <Dialog open={Boolean(editing)} onClose={saving ? undefined : () => setEditing(null)} maxWidth="sm" fullWidth>
+        <Box component="form" onSubmit={handleSave}>
+          <DialogTitle>{editing?.mode === 'create' ? 'Thêm thể loại' : 'Chỉnh sửa thể loại'}</DialogTitle>
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.2 }}>
+            <TextField label="Tên thể loại" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required fullWidth />
+            <TextField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} helperText="Để trống khi tạo để hệ thống tự sinh từ tên." fullWidth />
+            <TextField label="Mô tả" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} multiline minRows={3} fullWidth />
+            <FormControlLabel control={<Switch checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} />} label="Đang hoạt động" />
+          </DialogContent>
+          <DialogActions><Button onClick={() => setEditing(null)} disabled={saving}>Hủy</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu'}</Button></DialogActions>
+        </Box>
       </Dialog>
 
       <ConfirmDialog open={Boolean(deleting)} title="Xóa thể loại?" message={`Thể loại “${deleting?.name || ''}” sẽ bị xóa. Các truyện đang dùng thể loại này sẽ chuyển thành chưa phân loại.`} busy={deleteBusy} onCancel={() => setDeleting(null)} onConfirm={handleDelete} />
