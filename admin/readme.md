@@ -2,6 +2,9 @@
 
 Ứng dụng quản trị React cho các API `/api/v1/admin`.
 
+Tài liệu API, validation và mã lỗi chi tiết nằm tại
+[`backend/docs/admin_management.md`](../backend/docs/admin_management.md).
+
 ## Chạy local
 
 ```powershell
