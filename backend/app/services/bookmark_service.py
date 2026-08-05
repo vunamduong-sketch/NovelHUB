@@ -16,6 +16,8 @@ class BookmarkError(Exception):
 class BookmarkChapterNotAvailableError(BookmarkError):
     pass
 
+class BookmarkNovelNotAvailableError(BookmarkError):
+    pass
 
 class BookmarkNotFoundError(BookmarkError):
     pass
@@ -84,6 +86,18 @@ class BookmarkService:
 
         self.repository.delete(bookmark)
 
+    def list_novel_bookmarks(
+        self,
+        current_user: User,
+        novel_id: uuid.UUID,
+    ) -> list[tuple[Bookmark, Chapter, Novel]]:
+        self._get_public_novel(novel_id)
+
+        return self.repository.list_by_novel(
+            current_user.id,
+            novel_id,
+        )
+
     def _get_public_chapter(
         self,
         chapter_id: uuid.UUID,
@@ -111,3 +125,22 @@ class BookmarkService:
             )
 
         return chapter, novel
+    
+    def _get_public_novel(
+        self,
+        novel_id: uuid.UUID,
+    ) -> Novel:
+        novel = self.novel_repository.get_active_by_id(
+            novel_id,
+        )
+
+        if (
+            novel is None
+            or novel.visibility != "public"
+            or novel.moderation_status != "approved"
+        ):
+            raise BookmarkNovelNotAvailableError(
+                "Novel is not available",
+            )
+
+        return novel

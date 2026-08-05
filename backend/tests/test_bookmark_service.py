@@ -10,6 +10,23 @@ from app.services.bookmark_service import (
     BookmarkService,
 )
 
+def _service():
+    repository = Mock()
+    chapter_repository = Mock()
+    novel_repository = Mock()
+
+    service = BookmarkService(
+        repository,
+        chapter_repository,
+        novel_repository,
+    )
+
+    return (
+        service,
+        repository,
+        chapter_repository,
+        novel_repository,
+    )
 
 def create_service():
     bookmark_repository = Mock()
@@ -231,3 +248,32 @@ def test_remove_bookmark_reports_missing_bookmark():
         )
 
     bookmark_repository.delete.assert_not_called()
+
+def test_list_novel_bookmarks_returns_repository_items() -> None:
+    service, repository, _, novel_repository = _service()
+
+    user = SimpleNamespace(id=uuid.uuid4())
+
+    novel = SimpleNamespace(
+        id=uuid.uuid4(),
+        visibility="public",
+        moderation_status="approved",
+        deleted_at=None,
+    )
+
+    items = [SimpleNamespace()]
+
+    novel_repository.get_active_by_id.return_value = novel
+    repository.list_by_novel.return_value = items
+
+    result = service.list_novel_bookmarks(
+        user,
+        novel.id,
+    )
+
+    repository.list_by_novel.assert_called_once_with(
+        user.id,
+        novel.id,
+    )
+
+    assert result is items

@@ -74,3 +74,19 @@ export async function removeChapterBookmark(chapterId) {
     throw new Error(getErrorMessage(error))
   }
 }
+
+
+export async function fetchNovelBookmarks(novelId) {
+  try {
+    const response = await api.get(
+      `/novels/${novelId}/bookmarks`,
+    )
+
+    return response.data
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error),
+      { cause: error },
+    )
+  }
+}

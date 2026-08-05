@@ -20,6 +20,7 @@ from app.schemas.bookmark import (
 )
 from app.services.bookmark_service import (
     BookmarkChapterNotAvailableError,
+    BookmarkNovelNotAvailableError,
     BookmarkNotFoundError,
     BookmarkService,
 )
@@ -156,3 +157,28 @@ def remove_chapter_bookmark(
     return MessageResponse(
         message="Bookmark removed successfully."
     )
+
+@router.get(
+    "/novels/{novel_id}/bookmarks",
+    response_model=list[BookmarkResponse],
+)
+def list_novel_bookmarks(
+    novel_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: BookmarkService = Depends(get_bookmark_service),
+) -> list[BookmarkResponse]:
+    try:
+        items = service.list_novel_bookmarks(
+            current_user,
+            novel_id,
+        )
+    except BookmarkNovelNotAvailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return [
+        _bookmark_response(bookmark, chapter, novel)
+        for bookmark, chapter, novel in items
+    ]

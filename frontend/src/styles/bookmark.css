@@ -57,3 +57,34 @@
     margin-top: 6px;
   }
 }
+
+
+
+.bookmark-state-card,
+.bookmark-empty-state {
+  margin: 30px auto;
+  padding: 48px 24px;
+}
+
+.bookmarked-chapter-item {
+  justify-content: space-between;
+}
+
+.bookmarked-chapter-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookmarked-chapter-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmarked-chapter-copy span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
