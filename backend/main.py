@@ -8,6 +8,7 @@ from app.admin.api.routers.novels import router as admin_novels_router
 from app.admin.api.routers.tags import router as admin_tags_router
 from app.admin.api.routers.users import router as admin_users_router
 from app.api.routers.auth import router as auth_router
+from app.api.routers.bookmarks import router as bookmarks_router
 from app.api.routers.novels import router as novels_router
 from app.api.routers.users import router as users_router
 from app.api.routers.chapters import router as chapters_router
@@ -23,6 +24,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(novels_router, prefix="/api/v1")
 app.include_router(chapters_router, prefix="/api/v1")
+app.include_router(bookmarks_router, prefix="/api/v1")
 app.include_router(admin_users_router, prefix="/api/v1")
 app.include_router(admin_novels_router, prefix="/api/v1")
 app.include_router(admin_categories_router, prefix="/api/v1")

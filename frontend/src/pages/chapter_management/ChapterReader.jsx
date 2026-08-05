@@ -4,6 +4,7 @@ import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail } from '../../api/novelApi.js'
 import { getPublicChapterDetail, fetchPublicChapters } from '../../api/chapterApi.js'
+import { BookmarkButton } from '../../components/reader/BookmarkButton.jsx'
 
 function ChevronLeftIcon() {
   return (
@@ -119,15 +120,23 @@ export function ChapterReader() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
               ...getThemeStyles()
             }}>
-              <button
-                type="button"
-                className="secondary-button"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '14px' }}
-                onClick={() => navigate(`/novels/${novelId}`)}
-              >
-                <ListIcon /> Mục lục
-              </button>
-
+              <div className="chapter-reader-leaft-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                  }}
+                  onClick={() => navigate(`/novels/${novelId}`)}
+                >
+                  <ListIcon />  Mục Lục
+                </button>
+                <BookmarkButton chapterId={chapterId} />
+              </div>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                   <button
