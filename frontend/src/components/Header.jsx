@@ -278,12 +278,12 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
 
           {/* 4. Lịch sử đọc (nằm dưới Sáng tác của tôi, trên Thể loại truyện) */}
           <a 
-            href="#reading-history" 
-            className="drawer-nav-item"
-            onClick={(e) => { e.preventDefault(); closeMenu(); }}
-          >
-            <HistoryIcon /> <span>Lịch sử đọc</span>
-          </a>
+            href="/reading-history"
+            className={`drawer-nav-item ${location.pathname === '/reading-history' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/reading-history'); }}
+            >
+              <HistoryIcon /> <span>Lịch sử đọc</span>
+            </a>  
 
           {/* 5. Thể loại truyện */}
           <a 

@@ -4,6 +4,7 @@ import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail, fetchCategories } from '../../api/novelApi.js'
 import { fetchPublicChapters } from '../../api/chapterApi.js'
+import { BookmarkedChapterList } from '../../components/reader/BookmarkedChapterList.jsx'
 
 // 2D Vector Monochrome Icons
 function BookOpenIcon() {
@@ -95,7 +96,7 @@ export function NovelDetail() {
   const [errorMsg, setErrorMsg] = useState('')
 
   // Interactive UI states
-  const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'chapters'
+  const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'chapters' | 'bookmarks'
   const [isFollowing, setIsFollowing] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -548,6 +549,13 @@ export function NovelDetail() {
             >
               <span>DS. chương</span>
             </button>
+            <button
+              type="button"
+              className={`detail-tab-btn ${activeTab === 'bookmarks' ? 'active' : ''}`}
+              onClick={() => setActiveTab('bookmarks')}
+            >
+              <span>Đã đánh dấu</span>
+            </button>
           </div>
 
           {/* Tab Content Display */}
@@ -572,7 +580,7 @@ export function NovelDetail() {
                   </p>
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'chapters' ? (
               <div className="chapters-tab-pane">
                 {chapters.length === 0 ? (
                   <div className="empty-state-card sub-empty-card" style={{ padding: '48px 24px' }}>
@@ -656,7 +664,11 @@ export function NovelDetail() {
                   </div>
                 )}
               </div>
-            )}
+            ) : activeTab === 'bookmarks' ? (
+              <div className="chapters-tab-pane">
+                <BookmarkedChapterList novelId={novel.id} />
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

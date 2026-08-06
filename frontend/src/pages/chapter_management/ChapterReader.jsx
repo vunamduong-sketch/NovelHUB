@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail } from '../../api/novelApi.js'
 import { getPublicChapterDetail, fetchPublicChapters } from '../../api/chapterApi.js'
+import { BookmarkButton } from '../../components/reader/BookmarkButton.jsx'
+import { useReadingProgress } from '../../hooks/useReadingProgress.js'
 
 function ChevronLeftIcon() {
   return (
@@ -46,6 +48,16 @@ export function ChapterReader() {
 
   const [fontSize, setFontSize] = useState(18)
   const [theme, setTheme] = useState('light')
+  const articleRef = useRef(null)
+
+  const { getReadingPosition } = useReadingProgress({
+    chapterId,
+    chapter,
+    loading,
+    error,
+    articleRef,
+  })
+
 
   useEffect(() => {
     const loadChapterAndNovel = async () => {
@@ -119,15 +131,22 @@ export function ChapterReader() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
               ...getThemeStyles()
             }}>
-              <button
-                type="button"
-                className="secondary-button"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '14px' }}
-                onClick={() => navigate(`/novels/${novelId}`)}
-              >
-                <ListIcon /> Mục lục
-              </button>
-
+              <div className="chapter-reader-left-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                  }}
+                  onClick={() => navigate(`/novels/${novelId}`)}
+                >
+                  <ListIcon />  Mục Lục
+                </button>
+              </div>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                   <button
@@ -172,7 +191,7 @@ export function ChapterReader() {
               </div>
             </div>
 
-            <article style={{
+            <article ref={articleRef} style={{
               padding: '24px',
               borderRadius: '8px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -190,6 +209,12 @@ export function ChapterReader() {
                 <div style={{ fontSize: '13px', opacity: 0.7 }}>
                   Cập nhật: {new Date(chapter?.published_at || chapter?.created_at).toLocaleDateString('vi-VN')} • {chapter?.word_count} từ
                 </div>
+                <div className="chapter-reader-bookmark-row">
+                  <BookmarkButton
+                      chapterId={chapterId}
+                      getPosition={getReadingPosition}
+                    />
+                  </div>
               </header>
 
               <div style={{
