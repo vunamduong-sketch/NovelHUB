@@ -31,8 +31,8 @@ function BookmarkIcon({ filled }) {
   )
 }
 
+export function BookmarkButton({ chapterId, getPosition }) {
 
-export function BookmarkButton({ chapterId }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -43,35 +43,39 @@ export function BookmarkButton({ chapterId }) {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    let active = true
+  let active = true
 
-    setMessage('')
-    setIsBookmarked(false)
-
-    if (!user || !chapterId) {
-      return () => {
-        active = false
+  if (!user || !chapterId) {
+    Promise.resolve().then(() => {
+      if (active) {
+        setMessage('')
+        setIsBookmarked(false)
       }
-    }
-
-    getChapterBookmark(chapterId)
-      .then((data) => {
-        if (active) {
-          setIsBookmarked(
-            Boolean(data?.is_bookmarked),
-          )
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setIsBookmarked(false)
-        }
-      })
+    })
 
     return () => {
       active = false
     }
-  }, [chapterId, user])
+  }
+
+  getChapterBookmark(chapterId)
+    .then((data) => {
+      if (active) {
+        setMessage('')
+        setIsBookmarked(Boolean(data?.is_bookmarked))
+      }
+    })
+    .catch(() => {
+      if (active) {
+        setMessage('')
+        setIsBookmarked(false)
+      }
+    })
+
+  return () => {
+    active = false
+  }
+}, [chapterId, user])
 
   const handleToggleBookmark = async () => {
     if (!user) {
@@ -94,8 +98,10 @@ export function BookmarkButton({ chapterId }) {
         setIsBookmarked(false)
         setMessage('Đã bỏ đánh dấu chương.')
       } else {
+        const position = getPosition?.() || { position_offset: 0 }
+
         await saveChapterBookmark(chapterId, {
-          position_offset: 0,
+          position_offset: position.position_offset,
           note: null,
         })
 
@@ -116,7 +122,7 @@ export function BookmarkButton({ chapterId }) {
     <div className="reader-bookmark-control">
       <button
         type="button"
-        className={`secondary-button chapter-bookmark-button ${
+        className={`chapter-bookmark-button ${
           isBookmarked ? 'active' : ''
         }`}
         onClick={handleToggleBookmark}

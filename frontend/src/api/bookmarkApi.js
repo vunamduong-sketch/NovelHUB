@@ -32,7 +32,7 @@ export async function getChapterBookmark(chapterId) {
 
     return response.data
   } catch (error) {
-    throw new Error(getErrorMessage(error))
+    throw new Error(getErrorMessage(error), { cause: error })
   }
 }
 
@@ -58,7 +58,7 @@ export async function saveChapterBookmark(
 
     return response.data
   } catch (error) {
-    throw new Error(getErrorMessage(error))
+    throw new Error(getErrorMessage(error), { cause: error })
   }
 }
 
@@ -71,7 +71,7 @@ export async function removeChapterBookmark(chapterId) {
 
     return response.data
   } catch (error) {
-    throw new Error(getErrorMessage(error))
+    throw new Error(getErrorMessage(error), { cause: error })
   }
 }
 

@@ -35,41 +35,45 @@ export function BookmarkedChapterList({ novelId }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    let active = true
+  let active = true
 
-    if (!user) {
-      return () => {
-        active = false
-      }
-    }
-
-    setLoading(true)
-    setError('')
-
-    fetchNovelBookmarks(novelId)
-      .then((data) => {
-        if (active) {
-          setBookmarks(data || [])
-        }
-      })
-      .catch((requestError) => {
-        if (active) {
-          setError(
-            requestError.message ||
-              'Không thể tải chương đã đánh dấu.',
-          )
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false)
-        }
-      })
-
+  if (!user) {
     return () => {
       active = false
     }
-  }, [novelId, user])
+  }
+
+  Promise.resolve()
+    .then(() => {
+      if (!active) return null
+
+      setLoading(true)
+      setError('')
+
+      return fetchNovelBookmarks(novelId)
+    })
+    .then((data) => {
+      if (active && data !== null) {
+        setBookmarks(data || [])
+      }
+    })
+    .catch((requestError) => {
+      if (active) {
+        setError(
+          requestError.message || 'Không thể tải chương đã đánh dấu.',
+        )
+      }
+    })
+    .finally(() => {
+      if (active) {
+        setLoading(false)
+      }
+    })
+
+  return () => {
+    active = false
+  }
+}, [novelId, user])
 
   if (!user) {
     return (

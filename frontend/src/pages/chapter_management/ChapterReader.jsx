@@ -131,7 +131,7 @@ export function ChapterReader() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
               ...getThemeStyles()
             }}>
-              <div className="chapter-reader-leaft-actions">
+              <div className="chapter-reader-left-actions">
                 <button
                   type="button"
                   className="secondary-button"
@@ -146,7 +146,6 @@ export function ChapterReader() {
                 >
                   <ListIcon />  Mục Lục
                 </button>
-                <BookmarkButton chapterId={chapterId} />
               </div>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -210,6 +209,12 @@ export function ChapterReader() {
                 <div style={{ fontSize: '13px', opacity: 0.7 }}>
                   Cập nhật: {new Date(chapter?.published_at || chapter?.created_at).toLocaleDateString('vi-VN')} • {chapter?.word_count} từ
                 </div>
+                <div className="chapter-reader-bookmark-row">
+                  <BookmarkButton
+                      chapterId={chapterId}
+                      getPosition={getReadingPosition}
+                    />
+                  </div>
               </header>
 
               <div style={{
