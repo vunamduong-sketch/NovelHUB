@@ -4,6 +4,22 @@ import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getAuthorNovelDetail } from '../../api/novelApi.js'
 import { getAuthorChapterDetail, createChapter, updateChapter } from '../../api/chapterApi.js'
+import { summarizeChapterContent, suggestChapterTitle, checkChapterGrammar, suggestWriting } from '../../api/aiApi.js'
+
+const modalOverlayStyle = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center'
+}
+const modalContentStyle = {
+  backgroundColor: '#fff', padding: '24px', borderRadius: '8px', width: '90%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+}
+
+function SparkleIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+    </svg>
+  )
+}
 
 
 function ArrowLeftIcon() {
@@ -50,6 +66,16 @@ export function ChapterEditor() {
   const [summary, setSummary] = useState('')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('draft')
+
+  // AI States
+  const [aiLoading, setAiLoading] = useState(false)
+  const [showTitleModal, setShowTitleModal] = useState(false)
+  const [titleSuggestions, setTitleSuggestions] = useState([])
+  const [showGrammarModal, setShowGrammarModal] = useState(false)
+  const [grammarSuggestions, setGrammarSuggestions] = useState([])
+  const [showWritingModal, setShowWritingModal] = useState(false)
+  const [writingPrompt, setWritingPrompt] = useState('')
+  const [writingSuggestion, setWritingSuggestion] = useState('')
 
   useEffect(() => {
     const loadData = async () => {
@@ -125,6 +151,72 @@ export function ChapterEditor() {
     return content.trim().split(/\s+/).filter(Boolean).length
   }
 
+  // AI Handlers
+  const handleSuggestTitle = async () => {
+    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước khi nhờ AI gợi ý tiêu đề.")
+    setAiLoading(true)
+    try {
+      const titles = await suggestChapterTitle(novelId, content)
+      setTitleSuggestions(titles)
+      setShowTitleModal(true)
+    } catch (err) {
+      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const handleSummarize = async () => {
+    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước.")
+    setAiLoading(true)
+    try {
+      const result = await summarizeChapterContent(novelId, content)
+      setSummary(result)
+    } catch (err) {
+      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const handleCheckGrammar = async () => {
+    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước.")
+    setAiLoading(true)
+    try {
+      const suggestions = await checkChapterGrammar(novelId, content)
+      setGrammarSuggestions(suggestions)
+      setShowGrammarModal(true)
+    } catch (err) {
+      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+  
+  const handleApplyGrammar = (original, suggested, index) => {
+    setContent(prev => prev.replace(original, suggested))
+    setGrammarSuggestions(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSuggestWriting = async () => {
+    setAiLoading(true)
+    try {
+      const result = await suggestWriting(novelId, content, writingPrompt)
+      setWritingSuggestion(result)
+    } catch (err) {
+      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+  
+  const handleAppendWriting = () => {
+    setContent(prev => prev + (prev.endsWith('\n') ? '' : '\n\n') + writingSuggestion)
+    setShowWritingModal(false)
+    setWritingSuggestion('')
+    setWritingPrompt('')
+  }
+
   return (
     <div className="home-layout author-compositions-page">
       <Header />
@@ -179,7 +271,12 @@ export function ChapterEditor() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="chapter-title" style={{ display: 'block', fontWeight: '500', marginBottom: '8px' }}>Tiêu đề chương *</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label htmlFor="chapter-title" style={{ fontWeight: '500' }}>Tiêu đề chương *</label>
+                    <button type="button" onClick={handleSuggestTitle} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <SparkleIcon /> Gợi ý AI
+                    </button>
+                  </div>
                   <input
                     id="chapter-title"
                     type="text"
@@ -193,7 +290,12 @@ export function ChapterEditor() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="chapter-summary" style={{ display: 'block', fontWeight: '500', marginBottom: '8px' }}>Tóm tắt chương (Tùy chọn)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label htmlFor="chapter-summary" style={{ fontWeight: '500' }}>Tóm tắt chương (Tùy chọn)</label>
+                  <button type="button" onClick={handleSummarize} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <SparkleIcon /> Tự động tóm tắt
+                  </button>
+                </div>
                 <textarea
                   id="chapter-summary"
                   placeholder="Nhập tóm tắt ngắn của chương này..."
@@ -207,7 +309,15 @@ export function ChapterEditor() {
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <label htmlFor="chapter-content" style={{ fontWeight: '500' }}>Nội dung chương *</label>
-                  <span style={{ fontSize: '13px', color: 'gray' }}>{getWordCount()} từ</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button type="button" onClick={handleCheckGrammar} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <SparkleIcon /> Sửa lỗi
+                    </button>
+                    <button type="button" onClick={() => setShowWritingModal(true)} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <SparkleIcon /> Viết tiếp
+                    </button>
+                    <span style={{ fontSize: '13px', color: 'gray', marginLeft: '10px' }}>{getWordCount()} từ</span>
+                  </div>
                 </div>
                 <textarea
                   id="chapter-content"
@@ -274,6 +384,77 @@ export function ChapterEditor() {
           </section>
         )}
       </main>
+
+      {/* Modal: Gợi ý Tiêu đề */}
+      {showTitleModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h3 style={{marginTop: 0}}>Chọn tiêu đề gợi ý</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '20px 0' }}>
+              {titleSuggestions.map((t, idx) => (
+                <button key={idx} type="button" className="secondary-button" style={{textAlign: 'left', padding: '12px'}} onClick={() => { setTitle(t); setShowTitleModal(false); }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div style={{textAlign: 'right'}}><button type="button" className="secondary-button" onClick={() => setShowTitleModal(false)}>Đóng</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Kiểm tra ngữ pháp */}
+      {showGrammarModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '600px'}}>
+            <h3 style={{marginTop: 0}}>Lỗi Ngữ Pháp & Chính Tả</h3>
+            {grammarSuggestions.length === 0 ? (
+              <p>Tuyệt vời! Không tìm thấy lỗi nào đáng kể.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '20px 0', maxHeight: '400px', overflowY: 'auto' }}>
+                {grammarSuggestions.map((item, idx) => (
+                  <div key={idx} style={{ padding: '12px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+                    <p style={{margin: '0 0 8px 0'}}><strong>Lỗi:</strong> <span style={{color: '#d9534f', textDecoration: 'line-through'}}>{item.original_text}</span> ➡️ <span style={{color: '#5cb85c', fontWeight: 'bold'}}>{item.suggested_text}</span></p>
+                    <p style={{margin: '0 0 12px 0', fontSize: '13px', color: 'gray'}}><em>Lý do: {item.reason}</em></p>
+                    <button type="button" className="primary-button" style={{padding: '6px 12px', fontSize: '13px'}} onClick={() => handleApplyGrammar(item.original_text, item.suggested_text, idx)}>Chấp nhận sửa</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{textAlign: 'right'}}><button type="button" className="secondary-button" onClick={() => setShowGrammarModal(false)}>Đóng</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Viết tiếp */}
+      {showWritingModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '600px'}}>
+            <h3 style={{marginTop: 0}}>Trợ lý Viết Tiếp AI</h3>
+            <textarea
+              placeholder="Nhập chỉ dẫn định hướng cho AI (ví dụ: 'Cho nhân vật chính tìm thấy thanh gươm...'). Bỏ trống nếu muốn AI tự do sáng tạo."
+              value={writingPrompt}
+              onChange={e => setWritingPrompt(e.target.value)}
+              rows="3"
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', marginTop: '10px' }}
+            />
+            <div style={{ marginTop: '16px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button type="button" className="primary-button" onClick={handleSuggestWriting} disabled={aiLoading}>
+                {aiLoading ? 'Đang tạo...' : 'Tạo nội dung ✨'}
+              </button>
+            </div>
+
+            {writingSuggestion && (
+              <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                <h4 style={{marginTop: 0, marginBottom: '10px', fontSize: '14px', color: '#555'}}>Nội dung gợi ý:</h4>
+                <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '15px', marginBottom: '16px' }}>{writingSuggestion}</p>
+                <button type="button" className="primary-button" onClick={handleAppendWriting}>Chèn vào cuối nội dung</button>
+              </div>
+            )}
+            
+            <div style={{textAlign: 'right', marginTop: '20px'}}><button type="button" className="secondary-button" onClick={() => setShowWritingModal(false)}>Đóng</button></div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

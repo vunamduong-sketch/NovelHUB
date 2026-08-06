@@ -5,7 +5,15 @@ email-validator==2.3.0
 PyJWT==2.10.1
 pwdlib[argon2]==0.3.0
 psycopg[binary]==3.2.9
-pydantic-settings==2.10.1
+alembic==1.16.4
+fastapi==0.116.1
+python-multipart==0.0.9
+email-validator==2.3.0
+PyJWT==2.10.1
+pwdlib[argon2]==0.3.0
+psycopg[binary]==3.2.9
+pydantic-settings==2.2.1
+google-generativeai==0.8.3
 SQLAlchemy==2.0.41
 uvicorn[standard]==0.35.0
 

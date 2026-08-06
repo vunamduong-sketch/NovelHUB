@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     environment: str = "development"
     avatar_upload_dir: str = "uploads/avatars"
     avatar_public_url_prefix: str = "/uploads/avatars"
-    avatar_max_size_bytes: int = 2 * 1024 * 1024
+    avatar_max_size_bytes: int = 2 * 1024 * 1024 # 2MB
+    
+    # Gemini AI Configuration
+    gemini_api_key: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
