@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail } from '../../api/novelApi.js'
 import { getPublicChapterDetail, fetchPublicChapters } from '../../api/chapterApi.js'
 import { BookmarkButton } from '../../components/reader/BookmarkButton.jsx'
+import { useReadingProgress } from '../../hooks/useReadingProgress.js'
 
 function ChevronLeftIcon() {
   return (
@@ -47,6 +48,16 @@ export function ChapterReader() {
 
   const [fontSize, setFontSize] = useState(18)
   const [theme, setTheme] = useState('light')
+  const articleRef = useRef(null)
+
+  const { getReadingPosition } = useReadingProgress({
+    chapterId,
+    chapter,
+    loading,
+    error,
+    articleRef,
+  })
+
 
   useEffect(() => {
     const loadChapterAndNovel = async () => {
@@ -181,7 +192,7 @@ export function ChapterReader() {
               </div>
             </div>
 
-            <article style={{
+            <article ref={articleRef} style={{
               padding: '24px',
               borderRadius: '8px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
