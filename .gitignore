@@ -12,3 +12,8 @@ dist/
 coverage/
 .coverage
 
+# Temporary admin/author scripts
+backend/seed_data.py
+backend/update_role.py
+backend/test_ai.py
+backend/test_gemini.py
