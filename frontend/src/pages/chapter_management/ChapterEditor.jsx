@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Snackbar, Alert } from '@mui/material'
 import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getAuthorNovelDetail } from '../../api/novelApi.js'
@@ -67,8 +68,12 @@ export function ChapterEditor() {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('draft')
 
-  // AI States
+  // AI & Toast States
   const [aiLoading, setAiLoading] = useState(false)
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'info' })
+  
+  const showToast = (message, severity = 'error') => setToast({ open: true, message, severity })
+  const handleCloseToast = () => setToast(prev => ({ ...prev, open: false }))
   const [showTitleModal, setShowTitleModal] = useState(false)
   const [titleSuggestions, setTitleSuggestions] = useState([])
   const [showGrammarModal, setShowGrammarModal] = useState(false)
@@ -111,15 +116,15 @@ export function ChapterEditor() {
 
   const handleSubmit = async (submitStatus) => {
     if (!title.trim()) {
-      alert('Vui lòng nhập tiêu đề chương.')
+      showToast('Vui lòng nhập tiêu đề chương.', 'warning')
       return
     }
     if (!chapterNumber || isNaN(parseFloat(chapterNumber)) || parseFloat(chapterNumber) <= 0) {
-      alert('Vui lòng nhập số thứ tự chương hợp lệ (lớn hơn 0).')
+      showToast('Vui lòng nhập số thứ tự chương hợp lệ (lớn hơn 0).', 'warning')
       return
     }
     if (!content.trim()) {
-      alert('Vui lòng nhập nội dung chương.')
+      showToast('Vui lòng nhập nội dung chương.', 'warning')
       return
     }
 
@@ -140,7 +145,7 @@ export function ChapterEditor() {
       }
       navigate(`/author/novels/${novelId}/chapters`)
     } catch (err) {
-      alert(err.message || 'Lỗi khi lưu chương.')
+      showToast(err.message || 'Lỗi khi lưu chương.', 'error')
     } finally {
       setActionLoading(false)
     }
@@ -153,41 +158,41 @@ export function ChapterEditor() {
 
   // AI Handlers
   const handleSuggestTitle = async () => {
-    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước khi nhờ AI gợi ý tiêu đề.")
+    if (!content.trim()) return showToast("Vui lòng nhập nội dung chương trước khi nhờ AI gợi ý tiêu đề.", "warning")
     setAiLoading(true)
     try {
       const titles = await suggestChapterTitle(novelId, content)
       setTitleSuggestions(titles)
       setShowTitleModal(true)
     } catch (err) {
-      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+      showToast("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message), "error")
     } finally {
       setAiLoading(false)
     }
   }
 
   const handleSummarize = async () => {
-    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước.")
+    if (!content.trim()) return showToast("Vui lòng nhập nội dung chương trước.", "warning")
     setAiLoading(true)
     try {
       const result = await summarizeChapterContent(novelId, content)
       setSummary(result)
     } catch (err) {
-      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+      showToast("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message), "error")
     } finally {
       setAiLoading(false)
     }
   }
 
   const handleCheckGrammar = async () => {
-    if (!content.trim()) return alert("Vui lòng nhập nội dung chương trước.")
+    if (!content.trim()) return showToast("Vui lòng nhập nội dung chương trước.", "warning")
     setAiLoading(true)
     try {
       const suggestions = await checkChapterGrammar(novelId, content)
       setGrammarSuggestions(suggestions)
       setShowGrammarModal(true)
     } catch (err) {
-      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+      showToast("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message), "error")
     } finally {
       setAiLoading(false)
     }
@@ -204,7 +209,7 @@ export function ChapterEditor() {
       const result = await suggestWriting(novelId, content, writingPrompt)
       setWritingSuggestion(result)
     } catch (err) {
-      alert("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message))
+      showToast("Lỗi khi gọi AI: " + (err.response?.data?.detail || err.message), "error")
     } finally {
       setAiLoading(false)
     }
@@ -271,10 +276,10 @@ export function ChapterEditor() {
                 </div>
 
                 <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label htmlFor="chapter-title" style={{ fontWeight: '500' }}>Tiêu đề chương *</label>
-                    <button type="button" onClick={handleSuggestTitle} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <SparkleIcon /> Gợi ý AI
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <label htmlFor="chapter-title" style={{ fontWeight: '500', margin: 0 }}>Tiêu đề chương *</label>
+                    <button type="button" onClick={handleSuggestTitle} disabled={aiLoading} title="Nhờ AI gợi ý tiêu đề" style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', backgroundColor: '#f3e8ff', cursor: 'pointer', color: '#9333ea', transition: 'all 0.2s' }}>
+                      <SparkleIcon />
                     </button>
                   </div>
                   <input
@@ -290,10 +295,10 @@ export function ChapterEditor() {
               </div>
 
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label htmlFor="chapter-summary" style={{ fontWeight: '500' }}>Tóm tắt chương (Tùy chọn)</label>
-                  <button type="button" onClick={handleSummarize} disabled={aiLoading} className="secondary-button" style={{ padding: '4px 8px', fontSize: '13px', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    <SparkleIcon /> Tự động tóm tắt
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <label htmlFor="chapter-summary" style={{ fontWeight: '500', margin: 0 }}>Tóm tắt chương (Tùy chọn)</label>
+                  <button type="button" onClick={handleSummarize} disabled={aiLoading} title="Nhờ AI tự động tóm tắt" style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', backgroundColor: '#f3e8ff', cursor: 'pointer', color: '#9333ea', transition: 'all 0.2s' }}>
+                    <SparkleIcon />
                   </button>
                 </div>
                 <textarea
@@ -455,6 +460,18 @@ export function ChapterEditor() {
           </div>
         </div>
       )}
+
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={handleCloseToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ bottom: { xs: 90, sm: 24 } }}>
+        <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={aiLoading} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="info" icon={<SparkleIcon />} sx={{ backgroundColor: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe' }}>
+          Trợ lý AI đang phân tích dữ liệu, vui lòng đợi trong giây lát...
+        </Alert>
+      </Snackbar>
 
       <Footer />
     </div>
