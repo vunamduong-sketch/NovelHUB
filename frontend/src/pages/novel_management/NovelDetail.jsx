@@ -4,7 +4,18 @@ import { Header } from '../../components/Header.jsx'
 import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail, fetchCategories } from '../../api/novelApi.js'
 import { fetchPublicChapters } from '../../api/chapterApi.js'
+import {
+  fetchFollowedAuthors,
+  fetchFollowedNovels,
+  followAuthor,
+  followNovel,
+  getNovelRatingStatus,
+  rateNovel,
+  unfollowAuthor,
+  unfollowNovel,
+} from '../../api/communityApi.js'
 import { BookmarkedChapterList } from '../../components/reader/BookmarkedChapterList.jsx'
+import { useAuth } from '../../auth/useAuth.js'
 
 // 2D Vector Monochrome Icons
 function BookOpenIcon() {
@@ -88,6 +99,7 @@ function ChevronRightIcon() {
 export function NovelDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [novel, setNovel] = useState(null)
   const [categories, setCategories] = useState([])
@@ -95,9 +107,14 @@ export function NovelDetail() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Interactive UI states
-  const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'chapters' | 'bookmarks'
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [activeTab, setActiveTab] = useState('summary')
+  const [isFollowingNovel, setIsFollowingNovel] = useState(false)
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false)
+  const [ratingStatus, setRatingStatus] = useState(null)
+  const [selectedRating, setSelectedRating] = useState(5)
+  const [ratingNote, setRatingNote] = useState('')
+  const [isSubmittingFollow, setIsSubmittingFollow] = useState(false)
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -117,6 +134,22 @@ export function NovelDetail() {
         setNovel(novelData)
         setCategories(catsData || [])
         setChapters(chaptersData || [])
+
+        if (user) {
+          const [followedNovels, followedAuthors, ratingData] = await Promise.all([
+            fetchFollowedNovels(),
+            fetchFollowedAuthors(),
+            getNovelRatingStatus(id),
+          ])
+
+          setIsFollowingNovel(Array.isArray(followedNovels) && followedNovels.some((item) => item.novel_id === novelData.id))
+          setIsFollowingAuthor(Array.isArray(followedAuthors) && followedAuthors.some((item) => item.author_id === novelData.author_id))
+          setRatingStatus(ratingData)
+          if (ratingData?.my_rating?.score) {
+            setSelectedRating(ratingData.my_rating.score)
+            setRatingNote(ratingData.my_rating.review_text || '')
+          }
+        }
       } catch (err) {
         setErrorMsg(err.message || 'Không thể tải thông tin tác phẩm này.')
       } finally {
@@ -124,16 +157,87 @@ export function NovelDetail() {
       }
     }
     init()
-  }, [id])
+  }, [id, user])
 
   const showToast = (msg) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(''), 3000)
   }
 
-  const handleToggleFollow = () => {
-    setIsFollowing((prev) => !prev)
-    showToast(isFollowing ? 'Đã hủy theo dõi tác phẩm' : 'Đã thêm tác phẩm vào tủ sách theo dõi!')
+  const handleToggleNovelFollow = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setIsSubmittingFollow(true)
+    try {
+      if (isFollowingNovel) {
+        await unfollowNovel(novel.id)
+        setIsFollowingNovel(false)
+        setNovel((current) => ({
+          ...current,
+          follower_count: Math.max(Number(current.follower_count || 0) - 1, 0),
+        }))
+        showToast('Đã hủy theo dõi truyện.')
+      } else {
+        await followNovel(novel.id, true)
+        setIsFollowingNovel(true)
+        setNovel((current) => ({
+          ...current,
+          follower_count: Number(current.follower_count || 0) + 1,
+        }))
+        showToast('Đã thêm truyện vào danh sách theo dõi.')
+      }
+      window.dispatchEvent(new CustomEvent('novelhub:follow-changed'))
+    } catch (err) {
+      showToast(err.message || 'Không thể cập nhật theo dõi truyện.')
+    } finally {
+      setIsSubmittingFollow(false)
+    }
+  }
+
+  const handleToggleAuthorFollow = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setIsSubmittingFollow(true)
+    try {
+      if (isFollowingAuthor) {
+        await unfollowAuthor(novel.author_id)
+        setIsFollowingAuthor(false)
+        showToast('Đã hủy theo dõi tác giả.')
+      } else {
+        await followAuthor(novel.author_id, true)
+        setIsFollowingAuthor(true)
+        showToast('Đã theo dõi tác giả.')
+      }
+      window.dispatchEvent(new CustomEvent('novelhub:follow-changed'))
+    } catch (err) {
+      showToast(err.message || 'Không thể cập nhật theo dõi tác giả.')
+    } finally {
+      setIsSubmittingFollow(false)
+    }
+  }
+
+  const handleSubmitRating = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setIsSubmittingRating(true)
+    try {
+      const nextRating = await rateNovel(novel.id, {
+        score: Number(selectedRating),
+        review_text: ratingNote.trim() || null,
+      })
+      setRatingStatus(nextRating)
+      showToast('Đã lưu đánh giá của bạn.')
+    } catch (err) {
+      showToast(err.message || 'Không thể lưu đánh giá.')
+    } finally {
+      setIsSubmittingRating(false)
+    }
   }
 
   const handleShare = () => {
@@ -269,7 +373,7 @@ export function NovelDetail() {
                 <div className="detail-stat-item">
                   <div className="stat-value-box text-star">
                     <StarIcon />
-                    <strong>{novel.rating_average ? Number(novel.rating_average).toFixed(1) : '5.0'}</strong>
+                    <strong>{ratingStatus?.rating_average !== undefined ? Number(ratingStatus.rating_average).toFixed(1) : novel.rating_average ? Number(novel.rating_average).toFixed(1) : '0.0'}</strong>
                   </div>
                   <span className="stat-label">Đánh giá</span>
                 </div>
@@ -334,11 +438,22 @@ export function NovelDetail() {
 
                 <button
                   type="button"
-                  className={`secondary-button detail-action-btn ${isFollowing ? 'active' : ''}`}
-                  onClick={handleToggleFollow}
+                  className={`secondary-button detail-action-btn ${isFollowingNovel ? 'active' : ''}`}
+                  onClick={handleToggleNovelFollow}
+                  disabled={isSubmittingFollow}
                 >
                   <FollowerIcon />
-                  <span>{isFollowing ? 'Đã Theo Dõi' : 'Theo Dõi'}</span>
+                  <span>{isFollowingNovel ? 'Đang theo dõi' : 'Theo dõi truyện'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`secondary-button detail-action-btn ${isFollowingAuthor ? 'active' : ''}`}
+                  onClick={handleToggleAuthorFollow}
+                  disabled={isSubmittingFollow}
+                >
+                  <UserIcon />
+                  <span>{isFollowingAuthor ? 'Đang theo dõi tác giả' : 'Theo dõi tác giả'}</span>
                 </button>
 
                 <button
@@ -349,6 +464,51 @@ export function NovelDetail() {
                   <ShareIcon />
                   <span>Chia Sẻ</span>
                 </button>
+              </div>
+
+              <div className="custom-chapter-section" style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 360px' }}>
+                    <h3 style={{ marginBottom: '8px' }}>Đánh giá tác phẩm</h3>
+                    <p style={{ marginBottom: '12px', color: '#6b7280' }}>
+                      {user ? 'Chọn số sao và ghi nhận xét ngắn cho tác phẩm này.' : 'Đăng nhập để gửi đánh giá của bạn.'}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        value={selectedRating}
+                        onChange={(event) => setSelectedRating(event.target.value)}
+                        disabled={!user || isSubmittingRating}
+                        aria-label="Chọn số sao"
+                        style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', font: 'inherit' }}
+                      >
+                        {[5, 4, 3, 2, 1].map((score) => (
+                          <option key={score} value={score}>{score} sao</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={handleSubmitRating}
+                        disabled={!user || isSubmittingRating}
+                      >
+                        {isSubmittingRating ? 'Đang lưu...' : 'Lưu đánh giá'}
+                      </button>
+                    </div>
+                    <textarea
+                      value={ratingNote}
+                      onChange={(event) => setRatingNote(event.target.value)}
+                      placeholder="Nhận xét ngắn (không bắt buộc)"
+                      maxLength={5000}
+                      disabled={!user || isSubmittingRating}
+                      style={{ width: '100%', marginTop: '12px', minHeight: '100px', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', font: 'inherit' }}
+                    />
+                    {ratingStatus?.my_rating && (
+                      <p style={{ marginTop: '10px', color: '#6b7280' }}>
+                        Đánh giá hiện tại của bạn: {ratingStatus.my_rating.score} sao
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

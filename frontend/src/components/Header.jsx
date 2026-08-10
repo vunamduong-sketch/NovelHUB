@@ -56,6 +56,14 @@ function HistoryIcon() {
   )
 }
 
+function FollowIcon() {
+  return (
+    <svg className="menu-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+    </svg>
+  )
+}
+
 function CategoryIcon() {
   return (
     <svg className="menu-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -285,6 +293,16 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
               <HistoryIcon /> <span>Lịch sử đọc</span>
             </a>  
 
+          {user && (
+            <a
+              href="/followed"
+              className={`drawer-nav-item ${location.pathname === '/followed' ? 'active' : ''}`}
+              onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/followed'); }}
+            >
+              <FollowIcon /> <span>Đang theo dõi</span>
+            </a>
+          )}
+
           {/* 5. Thể loại truyện */}
           <a 
             href="#categories" 
@@ -492,6 +510,17 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                     </a>
                     <a href="#my-creations" className="user-dropdown-item" onClick={handleMyCreationsClick}>
                       <CreationIcon /> <span>Sáng tác của tôi</span>
+                    </a>
+                    <a
+                      href="/followed"
+                      className="user-dropdown-item"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setShowUserDropdown(false)
+                        navigate('/followed')
+                      }}
+                    >
+                      <FollowIcon /> <span>Đang theo dõi</span>
                     </a>
                     <div className="user-dropdown-divider" />
                     <button type="button" className="user-dropdown-item logout-btn" onClick={handleSignOut}>

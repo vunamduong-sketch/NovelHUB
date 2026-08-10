@@ -5,6 +5,7 @@ import { Footer } from '../../components/Footer.jsx'
 import { getNovelDetail } from '../../api/novelApi.js'
 import { getPublicChapterDetail, fetchPublicChapters } from '../../api/chapterApi.js'
 import { BookmarkButton } from '../../components/reader/BookmarkButton.jsx'
+import { ChapterComments } from '../../components/reader/ChapterComments.jsx'
 import { useReadingProgress } from '../../hooks/useReadingProgress.js'
 
 function ChevronLeftIcon() {
@@ -271,6 +272,7 @@ export function ChapterReader() {
                 </button>
               </div>
             </article>
+            <ChapterComments chapterId={chapterId} />
           </div>
         )}
       </main>
