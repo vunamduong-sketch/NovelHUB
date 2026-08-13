@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import require_author
+from app.api.dependencies import require_author, get_optional_current_user
 from app.database.session import get_db
 from app.models.chapter import Chapter
 from app.models.user import User
@@ -122,10 +122,11 @@ def get_my_chapters(
 @router.get("/chapters/{chapter_id}", response_model=ChapterDetailResponse)
 def get_chapter_detail(
     chapter_id: uuid.UUID,
+    current_user: User | None = Depends(get_optional_current_user),
     service: ChapterService = Depends(get_chapter_service),
 ) -> ChapterDetailResponse:
     try:
-        chapter = service.get_public_chapter_detail(chapter_id)
+        chapter = service.get_public_chapter_detail(chapter_id, current_user=current_user)
     except (ChapterNotFoundError, NovelNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return _chapter_detail_response(chapter)

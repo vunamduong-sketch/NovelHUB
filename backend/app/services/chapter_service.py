@@ -149,7 +149,7 @@ class ChapterService:
         self._get_author_novel(current_user, novel_id)
         return self.repository.get_chapters_by_novel(novel_id)
 
-    def get_public_chapter_detail(self, chapter_id: uuid.UUID) -> Chapter:
+    def get_public_chapter_detail(self, chapter_id: uuid.UUID, current_user: User | None = None) -> Chapter:
         chapter = self.repository.get_active_by_id(chapter_id)
         if chapter is None or chapter.status != "published":
             raise ChapterNotFoundError("Chapter is not available")
@@ -158,8 +158,12 @@ class ChapterService:
         if novel is None or novel.visibility != "public" or novel.moderation_status != "approved":
             raise NovelNotFoundError("Novel is not available")
 
-        chapter.view_count += 1
-        self.repository.save()
+        # Do not increment view counts when author is viewing their own chapter
+        if current_user is None or current_user.id != novel.author_id:
+            chapter.view_count += 1
+            novel.view_count += 1
+            self.repository.save()
+
         return chapter
 
     def get_author_chapter_detail(self, current_user: User, chapter_id: uuid.UUID) -> Chapter:

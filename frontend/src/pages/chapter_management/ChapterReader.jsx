@@ -59,18 +59,26 @@ export function ChapterReader() {
   })
 
 
+  const fetchedRef = useRef(null)
+
   useEffect(() => {
+    // Prevent duplicate fetch / double view-count increment on component mount (e.g. React StrictMode)
+    if (fetchedRef.current === chapterId) {
+      return
+    }
+    fetchedRef.current = chapterId
+
     const loadChapterAndNovel = async () => {
       setLoading(true)
       setError(null)
       try {
-        const [novelData, chapterData, chaptersData] = await Promise.all([
+        const chapterData = await getPublicChapterDetail(chapterId)
+        const [novelData, chaptersData] = await Promise.all([
           getNovelDetail(novelId),
-          getPublicChapterDetail(chapterId),
           fetchPublicChapters(novelId)
         ])
-        setNovel(novelData)
         setChapter(chapterData)
+        setNovel(novelData)
         setChapters(chaptersData || [])
       } catch (err) {
         setError(err.message || 'Không thể tải chương này.')
