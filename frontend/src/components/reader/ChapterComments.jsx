@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   createChapterComment,
@@ -26,24 +26,26 @@ export function ChapterComments({ chapterId }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
       const data = await fetchChapterComments(chapterId)
       setComments(data || [])
     } catch (err) {
-      setError(err.message || 'Khong the tai binh luan.')
+      setError(err.message || 'Không thể tải bình luận.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [chapterId])
 
   useEffect(() => {
-    if (chapterId) {
-      loadComments()
-    }
-  }, [chapterId])
+    if (!chapterId) return undefined
+    const timer = window.setTimeout(() => {
+      void loadComments()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [chapterId, loadComments])
 
   const requireLogin = () => {
     if (user) return true
@@ -63,7 +65,7 @@ export function ChapterComments({ chapterId }) {
       setContent('')
       await loadComments()
     } catch (err) {
-      setError(err.message || 'Khong the gui binh luan.')
+      setError(err.message || 'Không thể gửi bình luận.')
     } finally {
       setSubmitting(false)
     }
@@ -82,7 +84,7 @@ export function ChapterComments({ chapterId }) {
       setActiveReplyId(null)
       await loadComments()
     } catch (err) {
-      setError(err.message || 'Khong the gui phan hoi.')
+      setError(err.message || 'Không thể gửi phản hồi.')
     } finally {
       setSubmitting(false)
     }
@@ -93,27 +95,27 @@ export function ChapterComments({ chapterId }) {
       <div className="community-panel-header">
         <div>
           <span>Community</span>
-          <h2>Binh luan chuong</h2>
+          <h2>Bình luận chương</h2>
         </div>
-        <strong>{comments.length} binh luan</strong>
+        <strong>{comments.length} bình luận</strong>
       </div>
 
       <form className="community-form" onSubmit={handleCreateComment}>
         <textarea
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder={user ? 'Viet cam nhan cua ban ve chuong nay...' : 'Dang nhap de binh luan'}
+          placeholder={user ? 'Viết cảm nhận của bạn về chương này...' : 'Đăng nhập để bình luận'}
           maxLength={5000}
           disabled={!user || submitting}
         />
         <div className="community-form-footer">
           {!user ? (
             <button type="button" className="secondary-button" onClick={() => navigate('/login')}>
-              Dang nhap
+              Đăng nhập
             </button>
           ) : (
             <button type="submit" className="primary-button" disabled={submitting || !content.trim()}>
-              Gui binh luan
+              Gửi bình luận
             </button>
           )}
         </div>
@@ -122,9 +124,9 @@ export function ChapterComments({ chapterId }) {
       {error && <p className="community-error">{error}</p>}
 
       {loading ? (
-        <div className="community-state">Dang tai binh luan...</div>
+        <div className="community-state">Đang tải bình luận...</div>
       ) : comments.length === 0 ? (
-        <div className="community-state">Chua co binh luan nao cho chuong nay.</div>
+        <div className="community-state">Chưa có bình luận nào cho chương này.</div>
       ) : (
         <div className="community-list">
           {comments.map((comment) => (
@@ -137,9 +139,12 @@ export function ChapterComments({ chapterId }) {
               <button
                 type="button"
                 className="community-link-button"
-                onClick={() => setActiveReplyId((current) => current === comment.id ? null : comment.id)}
+                onClick={() => {
+                  if (!requireLogin()) return
+                  setActiveReplyId((current) => current === comment.id ? null : comment.id)
+                }}
               >
-                Tra loi
+                Trả lời
               </button>
 
               {activeReplyId === comment.id && (
@@ -150,7 +155,7 @@ export function ChapterComments({ chapterId }) {
                       ...prev,
                       [comment.id]: event.target.value,
                     }))}
-                    placeholder="Viet phan hoi..."
+                    placeholder="Viết phản hồi..."
                     maxLength={5000}
                     disabled={submitting}
                   />
@@ -160,7 +165,7 @@ export function ChapterComments({ chapterId }) {
                     disabled={submitting || !(replyContentById[comment.id] || '').trim()}
                     onClick={() => handleReply(comment.id)}
                   >
-                    Gui phan hoi
+                    Gửi phản hồi
                   </button>
                 </div>
               )}
@@ -185,4 +190,3 @@ export function ChapterComments({ chapterId }) {
     </section>
   )
 }
-

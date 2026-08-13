@@ -92,4 +92,9 @@ class AuthorFollowResponse(BaseModel):
     avatar_url: str | None = None
     notifications_enabled: bool
     followed_at: datetime
+    follower_count: int
 
+
+class AuthorFollowerCountResponse(BaseModel):
+    author_id: uuid.UUID
+    follower_count: int

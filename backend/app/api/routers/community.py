@@ -15,6 +15,7 @@ from app.repositories.community_repository import CommunityRepository
 from app.schemas.auth import MessageResponse
 from app.schemas.community import (
     AuthorFollowResponse,
+    AuthorFollowerCountResponse,
     CommentCreateRequest,
     CommentResponse,
     FollowToggleRequest,
@@ -91,6 +92,7 @@ def _novel_follow_response(
 def _author_follow_response(
     follow: AuthorFollow,
     author: User,
+    follower_count: int,
 ) -> AuthorFollowResponse:
     return AuthorFollowResponse(
         author_id=author.id,
@@ -99,6 +101,7 @@ def _author_follow_response(
         avatar_url=author.avatar_url,
         notifications_enabled=follow.notifications_enabled,
         followed_at=follow.created_at,
+        follower_count=follower_count,
     )
 
 
@@ -268,6 +271,11 @@ def follow_novel(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+    except CommunityConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     return _novel_follow_response(follow, novel, author)
 
 
@@ -316,7 +324,11 @@ def follow_author(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
-    return _author_follow_response(follow, author)
+    return _author_follow_response(
+        follow,
+        author,
+        service.repository.count_author_followers(author.id),
+    )
 
 
 @router.delete(
@@ -363,7 +375,30 @@ def list_followed_authors(
 ) -> list[AuthorFollowResponse]:
     items = service.list_followed_authors(current_user)
     return [
-        _author_follow_response(follow, author)
+        _author_follow_response(
+            follow,
+            author,
+            service.repository.count_author_followers(author.id),
+        )
         for follow, author in items
     ]
 
+
+@router.get(
+    "/authors/{author_id}/follower-count",
+    response_model=AuthorFollowerCountResponse,
+)
+def get_author_follower_count(
+    author_id: uuid.UUID,
+    service: CommunityService = Depends(get_community_service),
+) -> AuthorFollowerCountResponse:
+    author = service.repository.get_active_author(author_id)
+    if author is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Author is not available",
+        )
+    return AuthorFollowerCountResponse(
+        author_id=author.id,
+        follower_count=service.repository.count_author_followers(author.id),
+    )

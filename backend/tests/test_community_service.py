@@ -159,6 +159,19 @@ def test_follow_novel_creates_follow_for_public_novel() -> None:
     assert result == (follow, novel, author)
 
 
+def test_follow_novel_rejects_following_own_novel() -> None:
+    service, repository = _service()
+    user = _user()
+    novel = _public_novel()
+    novel.author_id = user.id
+    repository.get_public_novel.return_value = novel
+
+    with pytest.raises(CommunityConflictError):
+        service.follow_novel(user, novel.id, notifications_enabled=True)
+
+    repository.upsert_novel_follow.assert_not_called()
+
+
 def test_follow_author_rejects_following_self() -> None:
     service, repository = _service()
     user = _user()
@@ -167,6 +180,21 @@ def test_follow_author_rejects_following_self() -> None:
         service.follow_author(
             user,
             user.id,
+            notifications_enabled=True,
+        )
+
+    repository.upsert_author_follow.assert_not_called()
+
+
+def test_follow_author_rejects_user_without_author_role() -> None:
+    service, repository = _service()
+    user = _user()
+    repository.get_active_author.return_value = None
+
+    with pytest.raises(CommunityNotFoundError):
+        service.follow_author(
+            user,
+            uuid.uuid4(),
             notifications_enabled=True,
         )
 
@@ -185,4 +213,3 @@ def test_unfollow_novel_reports_missing_follow() -> None:
         service.unfollow_novel(user, novel.id)
 
     repository.delete_novel_follow.assert_not_called()
-

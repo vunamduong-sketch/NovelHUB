@@ -119,6 +119,8 @@ class CommunityService:
         novel = self.repository.get_public_novel(novel_id)
         if novel is None:
             raise CommunityNotFoundError("Novel is not available")
+        if novel.author_id == current_user.id:
+            raise CommunityConflictError("You cannot follow your own novel")
         author = self.repository.get_active_user(novel.author_id)
         if author is None:
             raise CommunityNotFoundError("Author is not available")
@@ -159,7 +161,7 @@ class CommunityService:
         if current_user.id == author_id:
             raise CommunityConflictError("You cannot follow yourself")
 
-        author = self.repository.get_active_user(author_id)
+        author = self.repository.get_active_author(author_id)
         if author is None:
             raise CommunityNotFoundError("Author is not available")
 
@@ -185,4 +187,3 @@ class CommunityService:
         current_user: User,
     ) -> list[tuple[AuthorFollow, User]]:
         return self.repository.list_followed_authors(current_user.id)
-

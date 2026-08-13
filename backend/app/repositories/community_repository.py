@@ -10,7 +10,9 @@ from app.models.comment import Comment
 from app.models.novel import Novel
 from app.models.novel_follow import NovelFollow
 from app.models.rating import Rating
+from app.models.role import Role
 from app.models.user import User
+from app.models.user_role import UserRole
 
 
 class CommunityRepository:
@@ -24,6 +26,29 @@ class CommunityRepository:
                 User.status == "active",
                 User.deleted_at.is_(None),
             )
+        )
+
+    def get_active_author(self, user_id: uuid.UUID) -> User | None:
+        return self.session.scalar(
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
+            .where(
+                User.id == user_id,
+                User.status == "active",
+                User.deleted_at.is_(None),
+                Role.code == "author",
+            )
+        )
+
+    def count_author_followers(self, author_id: uuid.UUID) -> int:
+        return int(
+            self.session.scalar(
+                select(func.count(AuthorFollow.follower_id)).where(
+                    AuthorFollow.author_id == author_id
+                )
+            )
+            or 0
         )
 
     def get_public_novel(self, novel_id: uuid.UUID) -> Novel | None:
@@ -236,10 +261,13 @@ class CommunityRepository:
         statement = (
             select(AuthorFollow, User)
             .join(User, User.id == AuthorFollow.author_id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
             .where(
                 AuthorFollow.follower_id == follower_id,
                 User.status == "active",
                 User.deleted_at.is_(None),
+                Role.code == "author",
             )
             .order_by(AuthorFollow.created_at.desc())
         )

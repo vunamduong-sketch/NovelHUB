@@ -87,3 +87,6 @@ export function fetchFollowedAuthors() {
   return request(() => api.get('/me/followed-authors'))
 }
 
+export function getAuthorFollowerCount(authorId) {
+  return request(() => api.get(`/authors/${authorId}/follower-count`))
+}

@@ -48,12 +48,15 @@ export function FollowedLibraryPage() {
   }, [accessToken])
 
   useEffect(() => {
-    loadFollowedItems()
+    const timer = window.setTimeout(() => {
+      void loadFollowedItems()
+    }, 0)
     window.addEventListener('focus', loadFollowedItems)
     window.addEventListener('novelhub:follow-changed', loadFollowedItems)
     return () => {
       window.removeEventListener('focus', loadFollowedItems)
       window.removeEventListener('novelhub:follow-changed', loadFollowedItems)
+      window.clearTimeout(timer)
     }
   }, [loadFollowedItems, user?.id])
 

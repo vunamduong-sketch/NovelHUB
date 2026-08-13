@@ -7,6 +7,7 @@ import { fetchPublicChapters } from '../../api/chapterApi.js'
 import {
   fetchFollowedAuthors,
   fetchFollowedNovels,
+  getAuthorFollowerCount,
   followAuthor,
   followNovel,
   getNovelRatingStatus,
@@ -110,6 +111,7 @@ export function NovelDetail() {
   const [activeTab, setActiveTab] = useState('summary')
   const [isFollowingNovel, setIsFollowingNovel] = useState(false)
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false)
+  const [authorFollowerCount, setAuthorFollowerCount] = useState(0)
   const [ratingStatus, setRatingStatus] = useState(null)
   const [selectedRating, setSelectedRating] = useState(5)
   const [ratingNote, setRatingNote] = useState('')
@@ -134,6 +136,12 @@ export function NovelDetail() {
         setNovel(novelData)
         setCategories(catsData || [])
         setChapters(chaptersData || [])
+        try {
+          const authorFollowerData = await getAuthorFollowerCount(novelData.author_id)
+          setAuthorFollowerCount(authorFollowerData.follower_count || 0)
+        } catch {
+          setAuthorFollowerCount(0)
+        }
 
         if (user) {
           const [followedNovels, followedAuthors, ratingData] = await Promise.all([
@@ -206,10 +214,12 @@ export function NovelDetail() {
       if (isFollowingAuthor) {
         await unfollowAuthor(novel.author_id)
         setIsFollowingAuthor(false)
+        setAuthorFollowerCount((count) => Math.max(count - 1, 0))
         showToast('Đã hủy theo dõi tác giả.')
       } else {
-        await followAuthor(novel.author_id, true)
+        const follow = await followAuthor(novel.author_id, true)
         setIsFollowingAuthor(true)
+        setAuthorFollowerCount(follow.follower_count || 0)
         showToast('Đã theo dõi tác giả.')
       }
       window.dispatchEvent(new CustomEvent('novelhub:follow-changed'))
@@ -302,6 +312,7 @@ export function NovelDetail() {
   }
 
   const categoryObj = categories.find((c) => c.id === novel.category_id)
+  const isOwnNovel = user?.id === novel.author_id
 
   return (
     <div className="home-layout">
@@ -440,21 +451,24 @@ export function NovelDetail() {
                   type="button"
                   className={`secondary-button detail-action-btn ${isFollowingNovel ? 'active' : ''}`}
                   onClick={handleToggleNovelFollow}
-                  disabled={isSubmittingFollow}
+                  disabled={isSubmittingFollow || isOwnNovel}
+                  title={isOwnNovel ? 'Bạn không thể theo dõi tác phẩm của chính mình.' : undefined}
                 >
                   <FollowerIcon />
-                  <span>{isFollowingNovel ? 'Đang theo dõi' : 'Theo dõi truyện'}</span>
+                  <span>{isOwnNovel ? 'Tác phẩm của bạn' : isFollowingNovel ? 'Đang theo dõi' : 'Theo dõi truyện'}</span>
                 </button>
 
                 <button
                   type="button"
                   className={`secondary-button detail-action-btn ${isFollowingAuthor ? 'active' : ''}`}
                   onClick={handleToggleAuthorFollow}
-                  disabled={isSubmittingFollow}
+                  disabled={isSubmittingFollow || isOwnNovel}
+                  title={isOwnNovel ? 'Bạn không thể theo dõi chính mình.' : undefined}
                 >
                   <UserIcon />
-                  <span>{isFollowingAuthor ? 'Đang theo dõi tác giả' : 'Theo dõi tác giả'}</span>
+                  <span>{isOwnNovel ? 'Bạn là tác giả' : isFollowingAuthor ? 'Đang theo dõi tác giả' : 'Theo dõi tác giả'}</span>
                 </button>
+                <span className="detail-author-follower-count">{authorFollowerCount} người theo dõi tác giả</span>
 
                 <button
                   type="button"
