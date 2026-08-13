@@ -247,6 +247,20 @@ class NovelRepository:
             )
         )
 
+    def get_tags_for_novels(self, novel_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[Tag]]:
+        if not novel_ids:
+            return {}
+        rows = self.session.execute(
+            select(NovelTag.novel_id, Tag)
+            .join(Tag, NovelTag.tag_id == Tag.id)
+            .where(NovelTag.novel_id.in_(novel_ids))
+            .order_by(Tag.name)
+        ).all()
+        tags_map: dict[uuid.UUID, list[Tag]] = {nid: [] for nid in novel_ids}
+        for novel_id, tag in rows:
+            tags_map[novel_id].append(tag)
+        return tags_map
+
     def replace_novel_tags(self, novel_id: uuid.UUID, tag_ids: list[int]) -> None:
         self.session.execute(delete(NovelTag).where(NovelTag.novel_id == novel_id))
         for tag_id in tag_ids:

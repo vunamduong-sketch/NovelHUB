@@ -140,6 +140,18 @@ class NovelService:
         author_name = current_user.display_name or current_user.username
         return novel, self.repository.get_tags_for_novel(novel.id), author_name
 
+    def _enrich_novels_with_tags(
+        self, items: list[tuple[Novel, str | None]]
+    ) -> list[tuple[Novel, list[Tag], str | None]]:
+        if not items:
+            return []
+        novel_ids = [novel.id for novel, _ in items]
+        tags_map = self.repository.get_tags_for_novels(novel_ids)
+        return [
+            (novel, tags_map.get(novel.id, []), author_name)
+            for novel, author_name in items
+        ]
+
     def get_public_novels(
         self,
         *,
@@ -152,10 +164,7 @@ class NovelService:
             category_id=category_id,
             status=status,
         )
-        return [
-            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
-            for novel, author_name in items
-        ]
+        return self._enrich_novels_with_tags(items)
 
     def get_new_releases(
         self,
@@ -164,10 +173,7 @@ class NovelService:
         search: str | None = None,
     ) -> list[tuple[Novel, list[Tag], str | None]]:
         items = self.repository.get_new_releases(category_id=category_id, search=search)
-        return [
-            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
-            for novel, author_name in items
-        ]
+        return self._enrich_novels_with_tags(items)
 
     def get_completed_novels(
         self,
@@ -176,10 +182,7 @@ class NovelService:
         search: str | None = None,
     ) -> list[tuple[Novel, list[Tag], str | None]]:
         items = self.repository.get_completed_novels(category_id=category_id, search=search)
-        return [
-            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
-            for novel, author_name in items
-        ]
+        return self._enrich_novels_with_tags(items)
 
     def get_featured_novels(
         self,
@@ -188,10 +191,7 @@ class NovelService:
         search: str | None = None,
     ) -> list[tuple[Novel, list[Tag], str | None]]:
         items = self.repository.get_featured_novels(category_id=category_id, search=search, limit=30)
-        return [
-            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
-            for novel, author_name in items
-        ]
+        return self._enrich_novels_with_tags(items)
 
     def get_public_novel(self, novel_id: uuid.UUID) -> tuple[Novel, list[Tag], str | None]:
         res = self.repository.get_public_novel(novel_id)
@@ -212,10 +212,7 @@ class NovelService:
             visibility=visibility,
             status=status,
         )
-        return [
-            (novel, self.repository.get_tags_for_novel(novel.id), author_name)
-            for novel, author_name in items
-        ]
+        return self._enrich_novels_with_tags(items)
 
     def get_categories(self) -> list[Category]:
         return self.repository.get_active_categories()

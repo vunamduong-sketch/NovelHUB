@@ -47,8 +47,8 @@ export async function fetchPublicNovels(params = {}) {
   try {
     const response = await api.get('/novels/', { params })
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
@@ -137,8 +137,8 @@ export async function fetchNewReleases(params = {}) {
   try {
     const response = await api.get('/novels/new-releases', { params })
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
@@ -146,8 +146,8 @@ export async function fetchCompletedNovels(params = {}) {
   try {
     const response = await api.get('/novels/completed', { params })
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
@@ -155,8 +155,8 @@ export async function fetchFeaturedNovels(params = {}) {
   try {
     const response = await api.get('/novels/featured', { params })
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
@@ -164,8 +164,8 @@ export async function fetchCategories() {
   try {
     const response = await api.get('/novels/categories')
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
@@ -173,8 +173,8 @@ export async function fetchTags() {
   try {
     const response = await api.get('/novels/tags')
     return response.data
-  } catch {
-    return []
+  } catch (error) {
+    throw new Error(messageFrom(error), { cause: error })
   }
 }
 
