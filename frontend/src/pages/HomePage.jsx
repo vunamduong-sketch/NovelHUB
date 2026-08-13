@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Header } from '../components/Header.jsx'
 import { Footer } from '../components/Footer.jsx'
-import { fetchPublicNovels, fetchCategories } from '../api/novelApi.js'
+import { fetchNewReleases, fetchCompletedNovels, fetchFeaturedNovels, fetchCategories } from '../api/novelApi.js'
 import { useAuth } from '../auth/useAuth.js'
 
 // 2D Vector Monochrome Icons (Matching Menu Drawer Icons 100%)
@@ -107,8 +107,10 @@ export function HomePage() {
   const location = useLocation()
   const { user } = useAuth()
 
-  // Real backend state for Newly Released Novels
+  // Real backend state for Newly Released, Featured & Completed Novels
   const [publishedNovels, setPublishedNovels] = useState([])
+  const [featuredNovels, setFeaturedNovels] = useState([])
+  const [completedNovels, setCompletedNovels] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [authorAlertModal, setAuthorAlertModal] = useState(false)
@@ -122,14 +124,20 @@ export function HomePage() {
       await Promise.resolve()
       setLoading(true)
       try {
-        const [novelsData, catsData] = await Promise.all([
-          fetchPublicNovels(searchQuery ? { search: searchQuery } : {}),
+        const [novelsData, featuredData, completedData, catsData] = await Promise.all([
+          fetchNewReleases(searchQuery ? { search: searchQuery } : {}),
+          fetchFeaturedNovels(searchQuery ? { search: searchQuery } : {}),
+          fetchCompletedNovels(searchQuery ? { search: searchQuery } : {}),
           fetchCategories(),
         ])
         setPublishedNovels(novelsData || [])
+        setFeaturedNovels(featuredData || [])
+        setCompletedNovels(completedData || [])
         setCategories(catsData || [])
       } catch {
         setPublishedNovels([])
+        setFeaturedNovels([])
+        setCompletedNovels([])
       } finally {
         setLoading(false)
       }
@@ -260,7 +268,7 @@ export function HomePage() {
         )}
 
         {/* ========================================================
-            2. PHẦN TRUYỆN MỚI RA MẮT (ĐÃ HOẠT ĐỘNG THỰC TẾ)
+            2. PHẦN TRUYỆN MỚI RA MẮT (HIỂN THỊ TỐI ĐA 8 TRUYỆN)
            ======================================================== */}
         <section id="new-releases-section" className="home-section-card">
           <div className="section-header-row">
@@ -273,6 +281,15 @@ export function HomePage() {
                 <p className="section-desc">Các tác phẩm mới xuất bản từ tác giả trên NovelHUB</p>
               </div>
             </div>
+
+            <button
+              type="button"
+              className="see-all-btn"
+              onClick={() => navigate('/novels/discover?tab=new-releases')}
+            >
+              <span>Xem tất cả</span>
+              <ArrowRightIcon />
+            </button>
           </div>
 
           {loading ? (
@@ -294,7 +311,7 @@ export function HomePage() {
             </div>
           ) : (
             <div className="home-novels-grid">
-              {publishedNovels.map((novel) => {
+              {publishedNovels.slice(0, 8).map((novel) => {
                 const categoryObj = categories.find((c) => c.id === novel.category_id)
 
                 return (
@@ -378,7 +395,7 @@ export function HomePage() {
         </section>
 
         {/* ========================================================
-            3. PHẦN TOP TRUYỆN NỔI BẬT (Trống dữ liệu)
+            3. PHẦN TOP TRUYỆN NỔI BẬT (HIỂN THỊ TỐI ĐA 8 TRUYỆN)
            ======================================================== */}
         <section className="home-section-card">
           <div className="section-header-row">
@@ -391,18 +408,120 @@ export function HomePage() {
                 <p className="section-desc">Bảng xếp hạng các tác phẩm có lượt đọc và đánh giá cao nhất</p>
               </div>
             </div>
+
+            <button
+              type="button"
+              className="see-all-btn"
+              onClick={() => navigate('/novels/discover?tab=featured')}
+            >
+              <span>Xem tất cả</span>
+              <ArrowRightIcon />
+            </button>
           </div>
 
-          <div className="empty-state-card sub-empty-card">
-            <div className="empty-icon-circle">
-              <TopFeaturedIcon />
+          {loading ? (
+            <div className="loading-state-card">
+              <div className="spinner-ring" />
+              <p>Đang tải bảng xếp hạng truyện nổi bật...</p>
             </div>
-            <p>Danh sách Top truyện nổi bật đang được cập nhật...</p>
-          </div>
+          ) : featuredNovels.length === 0 ? (
+            <div className="empty-state-card sub-empty-card">
+              <div className="empty-icon-circle">
+                <TopFeaturedIcon />
+              </div>
+              <p>
+                {searchQuery
+                  ? `Không tìm thấy truyện nổi bật nào phù hợp với từ khóa "${searchQuery}".`
+                  : 'Danh sách Top truyện nổi bật đang được cập nhật...'}
+              </p>
+            </div>
+          ) : (
+            <div className="home-novels-grid">
+              {featuredNovels.slice(0, 8).map((novel) => {
+                const categoryObj = categories.find((c) => c.id === novel.category_id)
+
+                return (
+                  <article 
+                    key={novel.id} 
+                    className="home-novel-card"
+                    onClick={() => navigate(`/novels/${novel.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {/* Cover Image */}
+                    <div className="home-card-cover-wrapper">
+                      {novel.cover_url ? (
+                        <img 
+                          src={novel.cover_url} 
+                          alt={novel.title} 
+                          className="home-card-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            if (e.target.nextSibling) e.target.nextSibling.style.display = 'grid'
+                          }}
+                        />
+                      ) : null}
+                      <div className="home-cover-placeholder" style={{ display: novel.cover_url ? 'none' : 'grid' }}>
+                        <BookOpenIcon />
+                        <span>{novel.title?.[0] || 'N'}</span>
+                      </div>
+
+                      {/* Status Tag */}
+                      <span className="card-floating-badge">
+                        {novel.status === 'completed' ? 'Đã hoàn thành' : 'Đang tiến hành'}
+                      </span>
+                    </div>
+
+                    {/* Content Body */}
+                    <div className="home-card-content">
+                      <div className="home-card-meta">
+                        {categoryObj && (
+                          <span className="home-category-chip">{categoryObj.name}</span>
+                        )}
+                        <span className="home-date-tag">
+                          {novel.published_at
+                            ? new Date(novel.published_at).toLocaleDateString('vi-VN')
+                            : 'Nổi bật'}
+                        </span>
+                      </div>
+
+                      <h3 className="home-card-title" title={novel.title}>{novel.title}</h3>
+
+                      <p className="home-card-desc">
+                        {novel.description || 'Chưa có mô tả tác phẩm.'}
+                      </p>
+
+                      {/* Tags */}
+                      {novel.tags && novel.tags.length > 0 && (
+                        <div className="home-card-tags">
+                          {novel.tags.slice(0, 3).map((t) => (
+                            <span key={t.id} className="home-tag-pill">#{t.name}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer Metrics */}
+                      <div className="home-card-footer">
+                        <div className="card-author-info" title={novel.author_name || 'Tác giả'}>
+                          <UserIcon />
+                          <span>{novel.author_name || `Tác giả #${novel.author_id.substring(0, 6)}`}</span>
+                        </div>
+
+                        <div className="card-metrics-box">
+                          <span title="Lượt xem"><EyeIcon /> {novel.view_count || 0}</span>
+                          <span title="Lượt theo dõi"><FollowerIcon /> {novel.follower_count || 0}</span>
+                          <span title="Đánh giá"><StarIcon /> {novel.rating_average ? Number(novel.rating_average).toFixed(1) : '5.0'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </section>
 
         {/* ========================================================
-            4. PHẦN TRUYỆN ĐÃ HOÀN THÀNH (Trống dữ liệu)
+            4. PHẦN TRUYỆN ĐÃ HOÀN THÀNH (HIỂN THỊ TỐI ĐA 8 TRUYỆN)
            ======================================================== */}
         <section className="home-section-card">
           <div className="section-header-row">
@@ -415,14 +534,114 @@ export function HomePage() {
                 <p className="section-desc">Tuyển tập các tác phẩm đã sáng tác trọn bộ</p>
               </div>
             </div>
+
+            <button
+              type="button"
+              className="see-all-btn"
+              onClick={() => navigate('/novels/discover?tab=completed')}
+            >
+              <span>Xem tất cả</span>
+              <ArrowRightIcon />
+            </button>
           </div>
 
-          <div className="empty-state-card sub-empty-card">
-            <div className="empty-icon-circle">
-              <CompletedIcon />
+          {loading ? (
+            <div className="loading-state-card">
+              <div className="spinner-ring" />
+              <p>Đang tải danh sách truyện đã hoàn thành...</p>
             </div>
-            <p>Danh sách truyện đã hoàn thành đang được cập nhật...</p>
-          </div>
+          ) : completedNovels.length === 0 ? (
+            <div className="empty-state-card sub-empty-card">
+              <div className="empty-icon-circle">
+                <CompletedIcon />
+              </div>
+              <p>
+                {searchQuery
+                  ? `Không tìm thấy truyện đã hoàn thành nào phù hợp với từ khóa "${searchQuery}".`
+                  : 'Hiện chưa có tác phẩm hoàn thành nào được xuất bản.'}
+              </p>
+            </div>
+          ) : (
+            <div className="home-novels-grid">
+              {completedNovels.slice(0, 8).map((novel) => {
+                const categoryObj = categories.find((c) => c.id === novel.category_id)
+
+                return (
+                  <article 
+                    key={novel.id} 
+                    className="home-novel-card"
+                    onClick={() => navigate(`/novels/${novel.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {/* Cover Image */}
+                    <div className="home-card-cover-wrapper">
+                      {novel.cover_url ? (
+                        <img 
+                          src={novel.cover_url} 
+                          alt={novel.title} 
+                          className="home-card-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            if (e.target.nextSibling) e.target.nextSibling.style.display = 'grid'
+                          }}
+                        />
+                      ) : null}
+                      <div className="home-cover-placeholder" style={{ display: novel.cover_url ? 'none' : 'grid' }}>
+                        <BookOpenIcon />
+                        <span>{novel.title?.[0] || 'N'}</span>
+                      </div>
+
+                      {/* Status Tag */}
+                      <span className="card-floating-badge">Đã hoàn thành</span>
+                    </div>
+
+                    {/* Content Body */}
+                    <div className="home-card-content">
+                      <div className="home-card-meta">
+                        {categoryObj && (
+                          <span className="home-category-chip">{categoryObj.name}</span>
+                        )}
+                        <span className="home-date-tag">
+                          {novel.published_at
+                            ? new Date(novel.published_at).toLocaleDateString('vi-VN')
+                            : 'Hoàn thành'}
+                        </span>
+                      </div>
+
+                      <h3 className="home-card-title" title={novel.title}>{novel.title}</h3>
+
+                      <p className="home-card-desc">
+                        {novel.description || 'Chưa có mô tả tác phẩm.'}
+                      </p>
+
+                      {/* Tags */}
+                      {novel.tags && novel.tags.length > 0 && (
+                        <div className="home-card-tags">
+                          {novel.tags.slice(0, 3).map((t) => (
+                            <span key={t.id} className="home-tag-pill">#{t.name}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer Metrics */}
+                      <div className="home-card-footer">
+                        <div className="card-author-info" title={novel.author_name || 'Tác giả'}>
+                          <UserIcon />
+                          <span>{novel.author_name || `Tác giả #${novel.author_id.substring(0, 6)}`}</span>
+                        </div>
+
+                        <div className="card-metrics-box">
+                          <span title="Lượt xem"><EyeIcon /> {novel.view_count || 0}</span>
+                          <span title="Lượt theo dõi"><FollowerIcon /> {novel.follower_count || 0}</span>
+                          <span title="Đánh giá"><StarIcon /> {novel.rating_average ? Number(novel.rating_average).toFixed(1) : '5.0'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </section>
       </main>
 

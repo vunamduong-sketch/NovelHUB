@@ -32,10 +32,10 @@ export function Footer() {
           <div className="footer-column">
             <h4>Khám phá</h4>
             <ul>
-              <li><a href="#categories">Thể loại truyện</a></li>
-              <li><a href="#rankings">Top truyện nổi bật</a></li>
-              <li><a href="#new">Truyện mới ra mắt</a></li>
-              <li><a href="#completed">Truyện đã hoàn thành</a></li>
+              <li><a href="/novels/discover?tab=all">Thể loại truyện</a></li>
+              <li><a href="/novels/discover?tab=featured">Top truyện nổi bật</a></li>
+              <li><a href="/novels/discover?tab=new-releases">Truyện mới ra mắt</a></li>
+              <li><a href="/novels/discover?tab=completed">Truyện đã hoàn thành</a></li>
             </ul>
           </div>
 

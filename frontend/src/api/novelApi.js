@@ -133,6 +133,33 @@ export async function getAuthorNovelDetail(novelId) {
 }
 
 
+export async function fetchNewReleases(params = {}) {
+  try {
+    const response = await api.get('/novels/new-releases', { params })
+    return response.data
+  } catch {
+    return []
+  }
+}
+
+export async function fetchCompletedNovels(params = {}) {
+  try {
+    const response = await api.get('/novels/completed', { params })
+    return response.data
+  } catch {
+    return []
+  }
+}
+
+export async function fetchFeaturedNovels(params = {}) {
+  try {
+    const response = await api.get('/novels/featured', { params })
+    return response.data
+  } catch {
+    return []
+  }
+}
+
 export async function fetchCategories() {
   try {
     const response = await api.get('/novels/categories')
@@ -150,3 +177,4 @@ export async function fetchTags() {
     return []
   }
 }
+

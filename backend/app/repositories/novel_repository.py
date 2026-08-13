@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.category import Category
@@ -13,6 +13,35 @@ from app.models.user import User
 class NovelRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def _public_novel_rows(self, statement):
+        results = []
+        for row in self.session.execute(statement):
+            novel, display_name, username = row[0], row[1], row[2]
+            results.append((novel, display_name or username))
+        return results
+
+    def _public_catalog_statement(self, *, category_id: int | None = None, search: str | None = None):
+        statement = (
+            select(Novel, User.display_name, User.username)
+            .outerjoin(User, User.id == Novel.author_id)
+            .where(
+                Novel.visibility == "public",
+                Novel.deleted_at.is_(None),
+                Novel.moderation_status == "approved",
+            )
+        )
+        if category_id is not None:
+            statement = statement.where(Novel.category_id == category_id)
+        if search and search.strip():
+            search_pattern = f"%{search.strip()}%"
+            statement = statement.where(
+                or_(
+                    Novel.title.ilike(search_pattern),
+                    Novel.description.ilike(search_pattern),
+                )
+            )
+        return statement
 
     def get_by_id(self, novel_id: uuid.UUID) -> Novel | None:
         return self.session.get(Novel, novel_id)
@@ -62,11 +91,75 @@ class NovelRepository:
             statement = statement.where(Novel.status == status)
         statement = statement.order_by(Novel.updated_at.desc())
 
-        results = []
-        for row in self.session.execute(statement):
-            novel, display_name, username = row[0], row[1], row[2]
-            results.append((novel, display_name or username))
-        return results
+        return self._public_novel_rows(statement)
+
+    def get_new_releases(
+        self,
+        *,
+        category_id: int | None = None,
+        search: str | None = None,
+        limit: int = 30,
+    ) -> list[tuple[Novel, str | None]]:
+        statement = (
+            self._public_catalog_statement(category_id=category_id, search=search)
+            .where(Novel.published_at.is_not(None))
+            .where(Novel.status != "completed")
+            .order_by(
+                Novel.published_at.desc().nulls_last(),
+                Novel.updated_at.desc(),
+                Novel.id.desc(),
+            )
+            .limit(limit)
+        )
+        return self._public_novel_rows(statement)
+
+    def get_completed_novels(
+        self,
+        *,
+        category_id: int | None = None,
+        search: str | None = None,
+    ) -> list[tuple[Novel, str | None]]:
+        statement = (
+            self._public_catalog_statement(category_id=category_id, search=search)
+            .where(Novel.status == "completed")
+            .order_by(
+                Novel.completed_at.desc().nulls_last(),
+                Novel.updated_at.desc(),
+                Novel.id.desc(),
+            )
+        )
+        return self._public_novel_rows(statement)
+
+    def get_featured_novels(
+        self,
+        *,
+        category_id: int | None = None,
+        search: str | None = None,
+        limit: int = 30,
+    ) -> list[tuple[Novel, str | None]]:
+        # Ranking balances popularity, engagement, rating confidence, and recency.
+        freshness = func.exp(
+            -(
+                func.extract(
+                    "epoch",
+                    func.now() - func.coalesce(Novel.published_at, Novel.created_at),
+                )
+                / 86400.0
+            )
+            / 30.0
+        )
+        score = (
+            0.35 * func.ln(1 + Novel.view_count)
+            + 0.35 * func.ln(1 + Novel.follower_count)
+            + 0.20 * Novel.rating_average * func.ln(1 + Novel.rating_count)
+            + 0.10 * freshness
+        )
+        statement = (
+            self._public_catalog_statement(category_id=category_id, search=search)
+            .order_by(score.desc(), Novel.published_at.desc().nulls_last(), Novel.updated_at.desc(), Novel.id.desc())
+            .limit(limit)
+        )
+        return self._public_novel_rows(statement)
 
     def get_public_novels(
         self,

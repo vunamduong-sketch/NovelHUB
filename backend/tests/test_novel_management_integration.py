@@ -1,4 +1,5 @@
 """Runs against an explicitly supplied disposable PostgreSQL database."""
+from datetime import datetime, timedelta, timezone
 import os
 import uuid
 
@@ -16,6 +17,7 @@ os.environ["DATABASE_URL"] = os.environ["NOVELHUB_TEST_DATABASE_URL"]
 
 from app.database.base import Base  # noqa: E402
 from app.database.session import SessionLocal  # noqa: E402
+from app.models.category import Category  # noqa: E402
 from app.models.novel import Novel  # noqa: E402
 from app.models.role import Role  # noqa: E402
 from app.models.tag import Tag  # noqa: E402
@@ -103,6 +105,54 @@ def _create_tags(tag_slugs: list[str], count: int = 2) -> list[int]:
         return [tag.id for tag in tags]
 
 
+def _create_category(name: str, slug_prefix: str) -> int:
+    with SessionLocal() as session:
+        category = Category(
+            name=name,
+            slug=f"{slug_prefix}-{uuid.uuid4().hex[:12]}",
+            description=f"{name} category",
+            is_active=True,
+        )
+        session.add(category)
+        session.commit()
+        session.refresh(category)
+        return int(category.id)
+
+
+def _create_public_novels(
+    author_id: uuid.UUID,
+    category_id: int,
+    *,
+    count: int,
+    title_prefix: str,
+    start_time: datetime,
+    completed: bool = False,
+) -> list[str]:
+    with SessionLocal() as session:
+        novels: list[Novel] = []
+        for index in range(count):
+            published_at = start_time + timedelta(minutes=index)
+            novel = Novel(
+                author_id=author_id,
+                category_id=category_id,
+                title=f"{title_prefix} {index}",
+                slug=f"{title_prefix.lower().replace(' ', '-')}-{uuid.uuid4().hex[:12]}",
+                description=f"{title_prefix} description {index}",
+                language_code="vi",
+                status="completed" if completed else "ongoing",
+                visibility="public",
+                moderation_status="approved",
+                published_at=published_at,
+                completed_at=published_at if completed else None,
+            )
+            session.add(novel)
+            novels.append(novel)
+        session.commit()
+        for novel in novels:
+            session.refresh(novel)
+        return [str(novel.id) for novel in novels]
+
+
 def test_author_can_create_update_publish_delete_and_reader_can_view_public_novel(api) -> None:
     client, emails, tag_slugs = api
     author_email, author_token = _register_and_login(client, emails, "author")
@@ -187,3 +237,79 @@ def test_author_cannot_update_another_authors_novel(api) -> None:
     )
 
     assert response.status_code == 404
+
+
+def test_public_new_releases_and_completed_lists_support_category_filter_and_limit(api) -> None:
+    client, emails, _ = api
+    author_email, _ = _register_and_login(client, emails, "catalogauthor")
+    _grant_author_role(author_email)
+
+    category_a_id = _create_category("Catalog Category A", "catalog-a")
+    category_b_id = _create_category("Catalog Category B", "catalog-b")
+
+    with SessionLocal() as session:
+        author = session.scalar(select(User).where(User.email == author_email))
+        assert author is not None
+        author_id = author.id
+
+    base_time = datetime(2026, 8, 1, 0, 0, tzinfo=timezone.utc)
+    _create_public_novels(
+        author_id,
+        category_a_id,
+        count=31,
+        title_prefix="Release A",
+        start_time=base_time,
+    )
+    _create_public_novels(
+        author_id,
+        category_b_id,
+        count=1,
+        title_prefix="Release B",
+        start_time=base_time + timedelta(hours=2),
+    )
+    _create_public_novels(
+        author_id,
+        category_a_id,
+        count=1,
+        title_prefix="Completed A",
+        start_time=base_time + timedelta(hours=4),
+        completed=True,
+    )
+    _create_public_novels(
+        author_id,
+        category_b_id,
+        count=1,
+        title_prefix="Completed B",
+        start_time=base_time + timedelta(hours=5),
+        completed=True,
+    )
+
+    new_releases = client.get("/api/v1/novels/new-releases")
+    assert new_releases.status_code == 200
+    release_titles = [item["title"] for item in new_releases.json()]
+    assert len(release_titles) == 30
+    assert release_titles[0] == "Release B 0"
+    assert "Release A 0" not in release_titles
+
+    category_filtered_releases = client.get(
+        "/api/v1/novels/new-releases",
+        params={"category_id": category_a_id},
+    )
+    assert category_filtered_releases.status_code == 200
+    filtered_release_items = category_filtered_releases.json()
+    assert len(filtered_release_items) == 30
+    assert all(item["category_id"] == category_a_id for item in filtered_release_items)
+
+    completed = client.get("/api/v1/novels/completed")
+    assert completed.status_code == 200
+    completed_items = completed.json()
+    assert [item["title"] for item in completed_items] == ["Completed B 0", "Completed A 0"]
+
+    category_filtered_completed = client.get(
+        "/api/v1/novels/completed",
+        params={"category_id": category_a_id},
+    )
+    assert category_filtered_completed.status_code == 200
+    filtered_completed_items = category_filtered_completed.json()
+    assert len(filtered_completed_items) == 1
+    assert filtered_completed_items[0]["title"] == "Completed A 0"

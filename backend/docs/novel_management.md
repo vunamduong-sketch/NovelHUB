@@ -15,6 +15,9 @@ Author có thể:
 Reader hoặc người dùng public có thể:
 
 - Xem danh sách novel đã được xuất bản công khai.
+- Xem danh sách truyện mới ra mắt, tối đa 30 đầu truyện.
+- Xem danh sách truyện đã hoàn thành.
+- Lọc danh sách truyện mới ra mắt và truyện đã hoàn thành theo thể loại.
 - Xem chi tiết novel đã được xuất bản công khai.
 - Lấy danh sách category đang active để chọn/lọc.
 - Lấy danh sách tag có sẵn để chọn/lọc.
@@ -60,6 +63,9 @@ Prefix: `/api/v1/novels`
 | `DELETE /{novel_id}` | author | Bearer access token | `200` message | `401`, `403`, `404` |
 | `POST /{novel_id}/publish` | author | Bearer access token | `200` published novel | `400`, `401`, `403`, `404` |
 | `GET /` | reader/public | Query `search`, `category_id`, `status_filter` | `200` public novel list | `422` |
+| `GET /new-releases` | reader/public | Query `category_id` | `200` latest public novel list | `422` |
+| `GET /completed` | reader/public | Query `category_id` | `200` completed public novel list | `422` |
+| `GET /featured` | reader/public | Query `category_id`, `search` | `200` featured public novel list (top 30) | `422` |
 | `GET /me` | author | Query `visibility`, `status_filter` | `200` author novel list | `401`, `403`, `422` |
 | `GET /categories` | reader/public | None | `200` active category list | - |
 | `GET /tags` | reader/public | None | `200` tag list | - |
@@ -426,12 +432,56 @@ Errors:
 
 - `404`: novel không tồn tại hoặc không public.
 
+## Công thức thống kê top truyện nổi bật
+
+Endpoint `GET /api/v1/novels/featured` sử dụng điểm xếp hạng tổng hợp để trả về top 30 truyện nổi bật.
+
+### Công thức
+
+$$
+score = 0.35 \cdot \ln(1 + view\_count)
++ 0.35 \cdot \ln(1 + follower\_count)
++ 0.20 \cdot rating\_average \cdot \ln(1 + rating\_count)
++ 0.10 \cdot freshness
+$$
+
+Trong đó:
+
+$$
+freshness = e^{-age\_days / 30}
+$$
+
+Và:
+
+$$
+age\_days = \frac{\text{seconds}(now - coalesce(published\_at, created\_at))}{86400}
+$$
+
+### Giải thích thiết kế
+
+- `ln(1 + view_count)` và `ln(1 + follower_count)` giúp giảm hiện tượng một vài truyện có số cực lớn áp đảo toàn bộ bảng xếp hạng.
+- `rating_average * ln(1 + rating_count)` giúp cân bằng giữa chất lượng đánh giá và độ tin cậy của số lượng đánh giá.
+- `freshness` tạo lợi thế nhẹ cho truyện mới hơn để bảng xếp hạng không bị "đóng băng" theo thời gian.
+- Trọng số hiện tại ưu tiên tín hiệu hành vi người dùng (`view`, `follower`) nhưng vẫn giữ chỗ cho chất lượng (`rating`) và độ mới (`freshness`).
+
+### Điều kiện dữ liệu đầu vào
+
+- Chỉ tính các truyện thỏa: `visibility = public`, `moderation_status = approved`, `deleted_at IS NULL`.
+- Có thể lọc thêm theo `category_id` và `search`.
+- Kết quả luôn giới hạn tối đa 30 truyện.
+
 ## Unit test
 
 Unit test không cần database. Chạy từ thư mục `backend`:
 
 ```powershell
 python -m pytest tests/test_novel_schema.py -q
+```
+
+Unit test cho luồng novel list/repository mới (bao gồm `new-releases`, `completed`, `featured`):
+
+```powershell
+python -m pytest tests/test_novel_service.py tests/test_novel_repository.py tests/test_novel_schema.py -q
 ```
 
 Có thể chạy chung với các unit test hiện có:
@@ -448,6 +498,8 @@ Các test này kiểm tra:
 - Schema create/update normalize `tag_ids`, loại ID trùng và reject ID không hợp lệ.
 - Schema reject status không hợp lệ.
 - Schema reject field không được định nghĩa.
+- Service map dữ liệu `novel + tags + author_name` đúng cho các endpoint danh sách mới.
+- Repository build pipeline truy vấn đúng (lọc, sort, limit) cho `new-releases`, `completed`, `featured` mà không cần PostgreSQL runtime.
 
 ## Integration test
 
@@ -529,7 +581,12 @@ Các test này kiểm tra:
 - Reader/public chỉ xem được novel public.
 - Reader không được tạo novel.
 - Author không sửa được novel của author khác.
+- Reader/public xem được danh sách `new-releases` đúng giới hạn 30.
+- Reader/public lọc được `new-releases` và `completed` theo `category_id`.
+- `completed` chỉ trả các truyện có `status = completed`.
 - Test không chạy nếu thiếu `NOVELHUB_TEST_DATABASE_URL`.
+
+Nếu cần kiểm thử đầy đủ endpoint `featured`, nên thêm integration test với dữ liệu có độ phân hóa rõ giữa `view_count`, `follower_count`, `rating_count`, `rating_average`, thời điểm `published_at` để đối chiếu thứ tự trả về theo công thức.
 
 ### 5. Xóa database test sau khi chạy
 

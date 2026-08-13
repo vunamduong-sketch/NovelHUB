@@ -30,6 +30,24 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    if credentials is None:
+        return None
+    from app.core.config import settings
+    try:
+        payload = decode_token(credentials.credentials, "access", settings)
+        user_id = uuid.UUID(payload["sub"])
+    except (ValueError, KeyError):
+        return None
+    user = AuthRepository(db).get_user_by_id(user_id)
+    if user is None or user.status != "active" or user.deleted_at is not None:
+        return None
+    return user
+
+
 def require_author(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

@@ -146,6 +146,36 @@ def get_public_novels(
     return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
 
 
+@router.get("/new-releases", response_model=list[NovelResponse])
+def get_new_releases(
+    category_id: int | None = None,
+    search: str | None = None,
+    service: NovelService = Depends(get_novel_service),
+) -> list[NovelResponse]:
+    items = service.get_new_releases(category_id=category_id, search=search)
+    return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
+
+
+@router.get("/completed", response_model=list[NovelResponse])
+def get_completed_novels(
+    category_id: int | None = None,
+    search: str | None = None,
+    service: NovelService = Depends(get_novel_service),
+) -> list[NovelResponse]:
+    items = service.get_completed_novels(category_id=category_id, search=search)
+    return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
+
+
+@router.get("/featured", response_model=list[NovelResponse])
+def get_featured_novels(
+    category_id: int | None = None,
+    search: str | None = None,
+    service: NovelService = Depends(get_novel_service),
+) -> list[NovelResponse]:
+    items = service.get_featured_novels(category_id=category_id, search=search)
+    return [_novel_response(novel, tags, author_name=author_name) for novel, tags, author_name in items]
+
+
 @router.get("/me", response_model=list[NovelResponse])
 def get_my_novels(
     visibility: str | None = None,

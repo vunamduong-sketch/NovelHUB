@@ -228,12 +228,12 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
   return (
     <>
       {/* Global Right-Side Drawer Navigation Overlay */}
-      <div 
+      <div
         className={`drawer-backdrop ${isMenuOpen ? 'open' : ''}`}
         onClick={closeMenu}
         aria-hidden="true"
       />
-      
+
       <aside className={`drawer-navigation ${isMenuOpen ? 'open' : ''}`}>
         <div className="drawer-header">
           <a className="brand" href="/" onClick={closeMenu}>
@@ -243,11 +243,11 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
             ✕
           </button>
         </div>
-        
+
         <nav className="drawer-nav-list">
           {/* 1. Trang chủ */}
-          <a 
-            href="/" 
+          <a
+            href="/"
             className={`drawer-nav-item ${location.pathname === '/' ? 'active' : ''}`}
             onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/'); }}
           >
@@ -256,8 +256,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
 
           {/* 2. Trang cá nhân (nếu đã đăng nhập) */}
           {user && (
-            <a 
-              href="/profile" 
+            <a
+              href="/profile"
               className={`drawer-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
               onClick={handleGoToProfile}
             >
@@ -267,9 +267,9 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
 
           {/* 3. Sáng tác của tôi (nếu đã đăng nhập) */}
           {user && (
-            <a 
-              href="/author/compositions" 
-              className={`drawer-nav-item ${location.pathname === '/author/compositions' ? 'active' : ''}`} 
+            <a
+              href="/author/compositions"
+              className={`drawer-nav-item ${location.pathname === '/author/compositions' ? 'active' : ''}`}
               onClick={handleMyCreationsClick}
             >
               <CreationIcon /> <span>Sáng tác của tôi</span>
@@ -277,46 +277,46 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
           )}
 
           {/* 4. Lịch sử đọc (nằm dưới Sáng tác của tôi, trên Thể loại truyện) */}
-          <a 
+          <a
             href="/reading-history"
             className={`drawer-nav-item ${location.pathname === '/reading-history' ? 'active' : ''}`}
             onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/reading-history'); }}
-            >
-              <HistoryIcon /> <span>Lịch sử đọc</span>
-            </a>  
+          >
+            <HistoryIcon /> <span>Lịch sử đọc</span>
+          </a>
 
           {/* 5. Thể loại truyện */}
-          <a 
-            href="#categories" 
-            className="drawer-nav-item"
-            onClick={(e) => { e.preventDefault(); closeMenu(); }}
+          <a
+            href="/novels/discover?tab=all"
+            className={`drawer-nav-item ${location.pathname === '/novels/discover' && (location.search.includes('tab=all') || !location.search.includes('tab=')) ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/novels/discover?tab=all'); }}
           >
             <CategoryIcon /> <span>Thể loại truyện</span>
           </a>
 
           {/* 6. Top truyện nổi bật */}
-          <a 
-            href="#top-featured" 
-            className="drawer-nav-item"
-            onClick={(e) => { e.preventDefault(); closeMenu(); }}
+          <a
+            href="/novels/discover?tab=featured"
+            className={`drawer-nav-item ${location.pathname === '/novels/discover' && location.search.includes('tab=featured') ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/novels/discover?tab=featured'); }}
           >
             <TopFeaturedIcon /> <span>Top truyện nổi bật</span>
           </a>
 
           {/* 7. Truyện mới ra mắt */}
-          <a 
-            href="#new-releases" 
-            className="drawer-nav-item"
-            onClick={(e) => { e.preventDefault(); closeMenu(); }}
+          <a
+            href="/novels/discover?tab=new-releases"
+            className={`drawer-nav-item ${location.pathname === '/novels/discover' && location.search.includes('tab=new-releases') ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/novels/discover?tab=new-releases'); }}
           >
             <NewReleasesIcon /> <span>Truyện mới ra mắt</span>
           </a>
 
           {/* 8. Truyện đã hoàn thành */}
-          <a 
-            href="#completed-novels" 
-            className="drawer-nav-item"
-            onClick={(e) => { e.preventDefault(); closeMenu(); }}
+          <a
+            href="/novels/discover?tab=completed"
+            className={`drawer-nav-item ${location.pathname === '/novels/discover' && location.search.includes('tab=completed') ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); closeMenu(); navigate('/novels/discover?tab=completed'); }}
           >
             <CompletedIcon /> <span>Truyện đã hoàn thành</span>
           </a>
@@ -331,9 +331,9 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
               <div className="author-icon-badge">
                 <CreationIcon />
               </div>
-              <button 
-                type="button" 
-                className="close-modal-btn" 
+              <button
+                type="button"
+                className="close-modal-btn"
                 onClick={() => setAuthorAlertModal(false)}
               >
                 ✕
@@ -342,8 +342,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
             <div className="author-alert-content">
               <h3>Tính năng dành cho Tác giả</h3>
               <p>Tính năng này dành cho tác giả. Vui lòng đăng ký quyền tác giả để bắt đầu đăng sáng tác của bạn trên NovelHUB.</p>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="primary-button modal-confirm-btn"
                 onClick={() => setAuthorAlertModal(false)}
               >
@@ -375,7 +375,7 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                 <input
                   type="text"
                   className="search-input"
-                  placeholder="Tìm kiếm tên truyện, tác giả..."
+                  placeholder="Tìm kiếm tên truyện hoặc từ khóa"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => { if (searchQuery.trim()) setShowSearchDropdown(true); }}
@@ -451,17 +451,17 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
           <div className="header-right" ref={dropdownRef}>
             {user ? (
               <div className="user-avatar-wrapper">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="header-avatar-btn"
                   onClick={handleLoginClick}
                   title={`Tài khoản: ${user.display_name || user.username}`}
                 >
                   {resolvedAvatarUrl ? (
-                    <img 
+                    <img
                       key={resolvedAvatarUrl}
-                      src={resolvedAvatarUrl} 
-                      alt={user.username} 
+                      src={resolvedAvatarUrl}
+                      alt={user.username}
                       className="avatar-img"
                       onError={(e) => {
                         e.target.style.display = 'none'
@@ -471,8 +471,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                       }}
                     />
                   ) : null}
-                  <div 
-                    className="avatar-fallback" 
+                  <div
+                    className="avatar-fallback"
                     style={{ display: resolvedAvatarUrl ? 'none' : 'grid' }}
                   >
                     {userInitial.toUpperCase()}
@@ -501,8 +501,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
                 )}
               </div>
             ) : (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="header-login-btn"
                 onClick={handleLoginClick}
               >
@@ -516,8 +516,8 @@ export function Header({ onToggleMenu: externalToggle, isMenuOpen: externalIsOpe
             )}
 
             {/* Nút menu 3 gạch nằm bên phải Avatar */}
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`menu-toggle-btn ${isMenuOpen ? 'active' : ''}`}
               onClick={toggleMenu}
               aria-label="Thanh điều hướng"

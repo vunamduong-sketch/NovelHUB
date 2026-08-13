@@ -6,6 +6,7 @@ import { RegisterPage } from './pages/auth/RegisterPage.jsx'
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { NovelDetail } from './pages/novel_management/NovelDetail.jsx'
+import { NovelDiscovery } from './pages/novel_management/NovelDiscovery.jsx'
 import { ProfilePage } from './pages/user_management/ProfilePage.jsx'
 import { AuthorCompositions } from './pages/novel_management/AuthorCompositions.jsx'
 import { ChapterList } from './pages/chapter_management/ChapterList.jsx'
@@ -18,6 +19,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/novels/discover" element={<NovelDiscovery />} />
+      <Route path="/novel-discovery" element={<Navigate to="/novels/discover" replace />} />
       <Route path="/novels/:id" element={<NovelDetail />} />
       <Route path="/novels/:novelId/chapters/:chapterId" element={<ChapterReader />} />
       <Route path="/login" element={<LoginPage />} />
