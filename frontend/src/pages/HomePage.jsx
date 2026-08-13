@@ -209,14 +209,14 @@ export function HomePage() {
             </h1>
 
             <p className="jumbotron-subtitle">
-              Nơi hội tụ hàng ngàn câu chuyện hấp dẫn từ các tác giả tài năng. 
+              Nơi hội tụ hàng ngàn câu chuyện hấp dẫn từ các tác giả tài năng.
               Trải nghiệm không gian đọc mượt mà, kết nối cộng đồng yêu tiểu thuyết và tự do sáng tạo tác phẩm của riêng mình.
             </p>
 
             {/* Cân đối nút Khám Phá Ngay & Bắt Đầu Sáng Tác */}
             <div className="jumbotron-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="primary-button hero-cta-btn"
                 onClick={() => {
                   const el = document.getElementById('new-releases-section')
@@ -227,8 +227,8 @@ export function HomePage() {
                 <ArrowRightIcon />
               </button>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="secondary-button hero-secondary-btn"
                 onClick={handleCreateNovelRedirect}
               >
@@ -315,8 +315,8 @@ export function HomePage() {
                 const categoryObj = categories.find((c) => c.id === novel.category_id)
 
                 return (
-                  <article 
-                    key={novel.id} 
+                  <article
+                    key={novel.id}
                     className="home-novel-card"
                     onClick={() => navigate(`/novels/${novel.id}`)}
                     style={{ cursor: 'pointer' }}
@@ -324,9 +324,9 @@ export function HomePage() {
                     {/* Cover Image */}
                     <div className="home-card-cover-wrapper">
                       {novel.cover_url ? (
-                        <img 
-                          src={novel.cover_url} 
-                          alt={novel.title} 
+                        <img
+                          src={novel.cover_url}
+                          alt={novel.title}
                           className="home-card-cover"
                           onError={(e) => {
                             e.target.style.display = 'none'
@@ -405,7 +405,7 @@ export function HomePage() {
               </div>
               <div>
                 <h2 className="section-title">Top Truyện Nổi Bật</h2>
-                <p className="section-desc">Bảng xếp hạng các tác phẩm có lượt đọc và đánh giá cao nhất</p>
+                <p className="section-desc">Top 30 tác phẩm nổi bật cập nhật đều đặn</p>
               </div>
             </div>
 
@@ -441,8 +441,8 @@ export function HomePage() {
                 const categoryObj = categories.find((c) => c.id === novel.category_id)
 
                 return (
-                  <article 
-                    key={novel.id} 
+                  <article
+                    key={novel.id}
                     className="home-novel-card"
                     onClick={() => navigate(`/novels/${novel.id}`)}
                     style={{ cursor: 'pointer' }}
@@ -450,9 +450,9 @@ export function HomePage() {
                     {/* Cover Image */}
                     <div className="home-card-cover-wrapper">
                       {novel.cover_url ? (
-                        <img 
-                          src={novel.cover_url} 
-                          alt={novel.title} 
+                        <img
+                          src={novel.cover_url}
+                          alt={novel.title}
                           className="home-card-cover"
                           onError={(e) => {
                             e.target.style.display = 'none'
@@ -567,8 +567,8 @@ export function HomePage() {
                 const categoryObj = categories.find((c) => c.id === novel.category_id)
 
                 return (
-                  <article 
-                    key={novel.id} 
+                  <article
+                    key={novel.id}
                     className="home-novel-card"
                     onClick={() => navigate(`/novels/${novel.id}`)}
                     style={{ cursor: 'pointer' }}
@@ -576,9 +576,9 @@ export function HomePage() {
                     {/* Cover Image */}
                     <div className="home-card-cover-wrapper">
                       {novel.cover_url ? (
-                        <img 
-                          src={novel.cover_url} 
-                          alt={novel.title} 
+                        <img
+                          src={novel.cover_url}
+                          alt={novel.title}
                           className="home-card-cover"
                           onError={(e) => {
                             e.target.style.display = 'none'
