@@ -12,6 +12,7 @@ from app.api.routers.bookmarks import router as bookmarks_router
 from app.api.routers.novels import router as novels_router
 from app.api.routers.users import router as users_router
 from app.api.routers.chapters import router as chapters_router
+from app.api.routers.community import router as community_router
 from app.api.routers.reading_history import router as reading_history_router
 from app.api.routers.ai import router as ai_router
 from app.core.config import settings
@@ -28,6 +29,7 @@ app.include_router(novels_router, prefix="/api/v1")
 app.include_router(chapters_router, prefix="/api/v1")
 app.include_router(reading_history_router, prefix="/api/v1")
 app.include_router(bookmarks_router, prefix="/api/v1")
+app.include_router(community_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
 app.include_router(admin_users_router, prefix="/api/v1")
 app.include_router(admin_novels_router, prefix="/api/v1")

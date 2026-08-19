@@ -12,6 +12,7 @@ import { AuthorCompositions } from './pages/novel_management/AuthorCompositions.
 import { ChapterList } from './pages/chapter_management/ChapterList.jsx'
 import { ChapterEditor } from './pages/chapter_management/ChapterEditor.jsx'
 import { ChapterReader } from './pages/chapter_management/ChapterReader.jsx'
+import { FollowedLibraryPage } from './pages/reader/FollowedLibraryPage.jsx'
 import { ReadingHistoryPage } from './pages/reader/ReadingHistoryPage.jsx'
 import './App.css'
 
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/reading-history" element={<ProtectedRoute><ReadingHistoryPage /></ProtectedRoute>} />
+      <Route path="/followed" element={<ProtectedRoute><FollowedLibraryPage /></ProtectedRoute>} />
       <Route path="/author/compositions" element={<ProtectedRoute><AuthorCompositions /></ProtectedRoute>} />
       <Route path="/novel-management/author-compositions" element={<ProtectedRoute><AuthorCompositions /></ProtectedRoute>} />
       <Route path="/author/novels/:novelId/chapters" element={<ProtectedRoute><ChapterList /></ProtectedRoute>} />
